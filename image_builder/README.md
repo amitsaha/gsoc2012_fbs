@@ -12,8 +12,6 @@ Project details: http://www.google-melange.com/gsoc/project/google/gsoc2012/amit
 
 Contact: Amit Saha <amitksaha@fedoraproject.org>
 
-	 http://fedoraproject.org/wiki/User:Amitksaha
-
 
 Usage
 -----
