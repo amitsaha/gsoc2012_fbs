@@ -147,6 +147,7 @@ if __name__ == '__main__':
     repos,mirrors = gather_repos(release,arch)
     
     #RPMs by NVR
+    rpms_nvr=[]
     if len(args.nvr)>0:
         rpms_nvr = args.nvr
 
