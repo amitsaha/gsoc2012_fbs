@@ -7,7 +7,7 @@ from image_builder.repo_create import RepoCreate
 from image_builder.bootiso import Bootiso
 
 possible_types = ['boot','live','dvd']
-possible_arches = ['x86_64', 'i686']
+possible_arches = ['x86_64', 'i386','i686']
 possible_products = ['fedora']
 possible_releases = ['16', '17', 'rawhide']
 
@@ -51,6 +51,9 @@ def get_nvr(bids,arch):
     return nvr
 
 def prep_siderepo(workdir, packages, arch):
+    arch = [arch]
+    arch.append('noarch')
+
     repodir = '%s/siderepo' % workdir
     repo_create = RepoCreate(repodir,arch)
     repo_create.make_repo(packages)
@@ -82,7 +85,7 @@ def gather_repos(release, arch):
     
     # get mirrorlist for this release
     mirrors=config.get(release, 'mirror')
-    
+
     return repos,mirrors
     
 if __name__ == '__main__':
@@ -128,7 +131,6 @@ if __name__ == '__main__':
     if not arch in possible_arches:
         print "ISOs for arch %s are not supported" % arch
         sys.exit(1)
-    arch=[arch,'noarch']
 
     #product = args.p[0].lowercase()
     product = args.p[0]
