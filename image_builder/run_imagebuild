@@ -1,1 +1,1 @@
-python imagebuild.py -t boot -a i686 -o image_op1 -w image_work -p fedora -r 17 -v 1 -nvr 'anaconda-17.26-1.fc17' -bid '318281' '311809'
+python imagebuild.py -t boot -a i386 -o image_op1 -w image_work -p fedora -r 17 -v 1 -nvr 'anaconda-17.26-1.fc17' -bid '318281' '311809'
