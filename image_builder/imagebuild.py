@@ -163,9 +163,9 @@ if __name__ == '__main__':
         siderepo = prep_siderepo(workdir, rpms, arch)
         repos.append(siderepo)
 
-    # if iso_type == 'boot':
-    #     print('Building Boot ISO')
-    #     build_bootiso(arch, release, version, repos, mirrors, None, outputdir, product)
+    if iso_type == 'boot':
+        print('Building Boot ISO')
+        build_bootiso(arch, release, version, repos, mirrors, None, outputdir, product)
 
     # if iso_type == 'live':
     #     print('Building Live Image')
