@@ -104,9 +104,9 @@ if __name__ == '__main__':
                         help = 'Release of product to build')
     parser.add_argument('-v', metavar = 'version', type = str, nargs = 1,
                         help = 'Version of ISO to build')
-    parser.add_argument('-nvr', metavar = 'nvr', type = str, nargs = '+', default=[],
+    parser.add_argument('--nvr', metavar = 'nvr', type = str, nargs = '+', default=[],
                         help = 'Specify packages via NVR to download from Koji') 
-    parser.add_argument('-bid', metavar = 'bid', type = str, nargs = '+', default=[],
+    parser.add_argument('--bid', metavar = 'bid', type = str, nargs = '+', default=[],
                         help = 'Specify packages via buildids to be downloaded from Koji') 
     
     # parse
@@ -156,9 +156,8 @@ if __name__ == '__main__':
         # get the NVR from the bids so that we can use the same code to 
         # download the packages
         rpms_bid = get_nvr(args.bid,arch)
-
-    # all rpms' NVR
-    rpms_nvr.extend(rpms_bid)
+        # all rpms' NVR
+        rpms_nvr.extend(rpms_bid)
     
     # prepare side repository
     rpms = rpms_nvr
