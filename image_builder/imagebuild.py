@@ -34,8 +34,17 @@ def build_live(arch, release, version, repos, proxy, outputdir,product):
 
 # DVD Image
 def build_dvd(arch, release, version, repos, proxy, outputdir,product):
-    dvd_builder = Live(arch, release, version, repos, proxy, outputdir,product)
-    dvd_builder.make_dvd()
+# Example command line:
+
+# pungi --nosource --nodebuginfo \
+#   --flavor Fedora --name Fedora --ver rawhide \
+#   -c /usr/share/spin-kickstarts/fedora-install-fedora.ks:
+
+# See: https://fedorahosted.org/pungi/wiki/PungiDocs/RunningPungi
+
+    #dvd_builder = Live(arch, release, version, repos, proxy, outputdir,product)
+    #dvd_builder.make_dvd()
+    pass
 
 def get_nvr(bids,arch):
 
@@ -54,6 +63,7 @@ def prep_siderepo(workdir, packages, arch):
     arch = [arch]
     arch.append('noarch')
 
+
     repodir = '%s/siderepo' % workdir
     repo_create = RepoCreate(repodir,arch)
     repo_create.make_repo(packages)
@@ -64,6 +74,12 @@ def prep_siderepo(workdir, packages, arch):
 
 def gather_repos(release, arch):
     # read repo configuration
+    
+    # The mirrorlist and repositories uses i386 as $arch, instead of
+    # i686
+    if arch=='i686':
+        arch='i386'
+
     config = ConfigParser.SafeConfigParser({'arch':arch})
     config.read(repo_config)
 
@@ -72,19 +88,19 @@ def gather_repos(release, arch):
     updates=config.get('DEFAULT','updates')
     testing=config.get('DEFAULT','updates-testing')
 
-    if updates:
+    if updates=='1':
         reponames.append('%s-updates' % release)
 
-    if testing:
+    if testing=='1':
         reponames.append('%s-updates-testing' % release)
 
     repos = []
+    mirrors = []
     for name in reponames:
+        # repos
         repos.append(config.get(name, 'url'))
-
-    
-    # get mirrorlist for this release
-    mirrors=config.get(release, 'mirror')
+        # mirrorlist
+        mirrors.append(config.get(name,'mirror'))
 
     return repos,mirrors
     

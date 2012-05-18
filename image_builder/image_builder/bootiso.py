@@ -71,33 +71,37 @@ class Bootiso():
         # add the main repository - the first repository from list
         section = "lorax-repo"
         data = {"name": "lorax repo",
-                "baseurl": repositories[0],
+                "#baseurl": repositories[0],
+                "mirrorlist": mirrors[0],
                 "enabled": 1}
 
 
         c.add_section(section)
         map(lambda (key, value): c.set(section, key, value), data.items())
 
-        # add the extra repositories
-        for n, extra in enumerate(repositories[1:], start=1):
+
+        # append a blank mirror so as to account for the side repository
+        mirrors.append('')
+
+        # add the extra repositories and mirrors
+        for n, (repo,mirror) in enumerate(zip(repositories[1:], mirrors[1:])):
             section = "lorax-extra-repo-{0:d}".format(n)
-            data = {"name": "lorax extra repo {0:d}".format(n),
-                    "baseurl": extra,
-                    "enabled": 1}
-        
+            
+            # other repos
+            if n==len(mirrors)-2:
+                data = {"name": "lorax extra repo {0:d}".format(n),
+                        "baseurl": repo,
+                        "enabled": 1}
+            # side repo
+            else:
+                data = {"name": "lorax extra repo {0:d}".format(n),
+                        "mirrorlist":mirror,
+                        "#baseurl": repo,
+                        "enabled": 1}
+                
+                
             c.add_section(section)
             map(lambda (key, value): c.set(section, key, value), data.items())
-
-        # # add the mirror
-        # for n, mirror in enumerate(mirrors, start=1):
-        #     section = "lorax-mirrors-{0:d}".format(n)
-        #     data = {"name": "lorax mirror {0:d}".format(n),
-        #             "mirrorlist": mirror,
-        #             "enabled": 1 }
-
-        #     c.add_section(section)
-        #     map(lambda (key, value): c.set(section, key, value), data.items())
-
 
         # write the yum configuration file
         with open(yumconf, "w") as f:
