@@ -7,7 +7,10 @@ from pykickstart.parser import *
 from pykickstart.version import makeVersion
 
 # KS file to modify
-ksfile='/usr/share/spin-kickstarts/fedora-live-desktop.ks'
+#ksfile='/usr/share/spin-kickstarts/fedora-livedvd-scientific-kde.ks'
+
+#ksfile='default.ks'
+ksfile='nodefault.ks'
 newksfile='new_ks.ks'
 
 # read
@@ -17,10 +20,12 @@ ksparser.readKickstart(ksfile)
 #obtain the handler dump
 kshandlers=ksparser.handler
 
+print kshandlers.__str__()
+
 # add a repository
-kshandlers.repo.repoList.extend(['repo --name="siderepo" --baseurl="file:///tmp/siderepo"\n'])
+#kshandlers.repo.repoList.extend(['repo --name="siderepo" --baseurl="file:///tmp/siderepo"\n'])
 
 # Write back the ks file
-outfile = open(newksfile, 'w')
-outfile.write(kshandlers.__str__())
-outfile.close()
+#outfile = open(newksfile, 'w')
+#outfile.write(kshandlers.__str__())
+#outfile.close()
