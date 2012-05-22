@@ -152,12 +152,12 @@ def build_dvd():
     rpms_nvr.extend(rpms_bid)
     
     # prepare side repository
-    # workdir=config.get('DEFAULT','workdir')
-    # rpms = rpms_nvr
-    # if len(rpms) > 0:
-    #     siderepo = prep_siderepo(workdir, rpms, arch)
-    #     # Add side repo to the existing KS file
-    #     add_repo(ks,siderepo)
+    workdir=config.get('DEFAULT','workdir')
+    rpms = rpms_nvr
+    if len(rpms) > 0:
+        siderepo = prep_siderepo(workdir, rpms, arch)
+        # Add side repo to the existing KS file
+        add_repo(ks,siderepo)
     
     # fire pungi
     process_call = ['pungi']
