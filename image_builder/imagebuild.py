@@ -139,19 +139,21 @@ def build_dvd():
     bid=config.get('DEFAULT','bid')
 
     rpms_nvr=[]
-    
-    for rpm in nvr.split(';'):
-        rpms_nvr.extend(rpm)
+    if nvr!='':
+        for rpm in nvr.split(';'):
+            rpms_nvr.append(rpm)
 
     bids=[]
-    for rpm in bid.split(';'):
-        bids.append(str(rpm))
+    if bid!='':
+        for rpm in bid.split(';'):
+            bids.extend(str(rpm))
     
-    arch=config.get('DEFAULT','arch')
-    rpms_bid = get_nvr(bids,arch)
-    rpms_nvr.extend(rpms_bid)
+    if len(bids)>0:
+        rpms_bid = get_nvr(bids,arch)
+        rpms_nvr.extend(rpms_bid)
     
     # prepare side repository
+    arch=config.get('DEFAULT','arch')
     workdir=config.get('DEFAULT','workdir')
     rpms = rpms_nvr
     if len(rpms) > 0:
@@ -162,8 +164,6 @@ def build_dvd():
     # fire pungi
     process_call = ['pungi']
     process_call.extend(args)
-
-    print process_call
 
     subprocess.call(process_call)
 
@@ -293,21 +293,21 @@ if __name__ == '__main__':
             rpms_nvr = args.nvr
 
          #RPMs by Build IDs
-            if len(args.bid)>0:
-                # get the NVR from the bids so that we can use the same code to 
-                # download the packages
-                rpms_bid = get_nvr(args.bid,arch)
-                # all rpms' NVR
-                rpms_nvr.extend(rpms_bid)
+        if len(args.bid)>0:
+            # get the NVR from the bids so that we can use the same code to 
+            # download the packages
+            rpms_bid = get_nvr(args.bid,arch)
+            # all rpms' NVR
+            rpms_nvr.extend(rpms_bid)
     
-            # prepare side repository
-            rpms = rpms_nvr
-            if len(rpms) > 0:
-                siderepo = prep_siderepo(workdir, rpms, arch)
-                repos.append(siderepo)
+        # prepare side repository
+        rpms = rpms_nvr
+        if len(rpms) > 0:
+            siderepo = prep_siderepo(workdir, rpms, arch)
+            repos.append(siderepo)
 
-            print('Building Boot ISO')
-            build_bootiso(arch, release, version, repos, mirrors, None, outputdir, product)
+        print('Building Boot ISO')
+        build_bootiso(arch, release, version, repos, mirrors, None, outputdir, product)
 
 
     # DVD
