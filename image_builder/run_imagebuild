@@ -1,6 +1,0 @@
-# DVD test command line
-python imagebuild.py -t dvd -a i686
-
-# boot.iso
-#python imagebuild.py -t boot -a i686 -o /tmp/lorax_op -w /tmp/lorax_work -p fedora -r 17 -v 1 --nvr 'anaconda-17.28-1.fc17' --bid '318281' '311809'
-
