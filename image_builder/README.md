@@ -17,8 +17,19 @@ Usage
 -----
 Dependencies: pylorax (http://git.fedorahosted.org/git/?p=lorax.git;a=tree), Koji and some more which I don't remember :-(
 
-To see the options, run 
+The user options are specified by a number of .conf files in the config/ directory. 
 
-$python imagebuild.py --help
+The file config/imagebuild.conf specifies the type of image to be built- Boot ISO, DVD or Live image. Only one of boot, dvd or live is allowed.
 
-To run, see run_imagebuild script. 
+The file config/boot.conf specifies the options for creating the Boot ISO and the config/repoinfo.conf specifies the repositories to use for creating the same.
+
+The file config/pungi.conf specifies the options for creating the DVD ISO. The kickstart file specified should be a 'ksflatten'ed KS file.
+
+The file config/live.conf specifies the options for creating the Live image. The kickstart file specified should be a 'ksflatten'ed KS file.
+
+Currently, extra packages may be specified via NVR and/or Build IDs in the relevant .conf file.
+
+Once this is done, run
+$ sudo python imagebuild.py
+
+
