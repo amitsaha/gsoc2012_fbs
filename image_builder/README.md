@@ -19,7 +19,7 @@ Dependencies: pylorax (http://git.fedorahosted.org/git/?p=lorax.git;a=tree), Koj
 
 The user options are specified by a number of .conf files in the config/ directory. 
 
-The file config/imagebuild.conf specifies the type of image to be built- Boot ISO, DVD or Live image. Only one of boot, dvd or live is allowed. The staging location is also specified here. This is the location where you want your image to be delivered. The specification should be of the form <hostname>:<location>. An email is sent once the image building is complete to the email address specified. (This is not yet implemented).
+The file config/imagebuild.conf specifies the type of image to be built- Boot ISO, DVD or Live image. Only one of boot, dvd or live is allowed. The staging location is also specified here. This is the location where you want your image to be delivered. The specification should be of the form hostname:location (as acceptable by 'scp'). It is necessary to have a password-less login set up between the building node and the destination host. An email is sent once the image building is complete to the email address specified. (This is not yet implemented).
 
 The file config/boot.conf specifies the options for creating the Boot ISO and the config/repoinfo.conf specifies the repositories to use for creating the same.
 
