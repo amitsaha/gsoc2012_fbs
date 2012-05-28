@@ -32,9 +32,12 @@ def main():
     
     if not os.path.exists('/etc/imagebuild'):
         os.makedirs('/etc/imagebuild')
+    else:
+        shutil.rmtree('/etc/imagebuild')
+        os.makedirs('/etc/imagebuild')
 
     #copy the .conf files
-    for config in glob.glob( os.path.join('config', '*.conf') ):
+    for config in glob.glob(os.path.join('config', '*.conf') ):
         shutil.copy2(config,'/etc/imagebuild')
 
     #copy the kickstart files
