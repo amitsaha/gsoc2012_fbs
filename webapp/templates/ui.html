@@ -1,0 +1,70 @@
+<!doctype html>
+<title>On-Demand Fedora Build Service</title>
+<center><h2> On-Demand Fedora Build Service </h2></center>
+
+{% from "_formhelpers.html" import render_field %}
+
+<form method=POST action="/build" enctype="multipart/form-data">
+  <table cellspacing="50">
+    <tr>
+      <td>
+	<h3>Basic Configuration</h3>
+      <dl>
+	{{ render_field(form.image) }}
+	{{ render_field(form.arch) }}
+	{{ render_field(form.staging) }}
+	{{ render_field(form.email) }}
+      </dl>
+      </td>
+
+      <td>
+      <h3>Boot ISO Configuration</h3>
+      {{ render_field(form.product) }}
+      {{ render_field(form.release) }}
+      {{ render_field(form.version) }}
+      {{ render_field(form.baseurl) }}
+      {{ render_field(form.proxy) }}
+      {{ render_field(form.gold) }}
+      {{ render_field(form.updates) }}
+      {{ render_field(form.updates_testing) }}
+      {{ render_field(form.nvr) }}
+      {{ render_field(form.bid) }}
+      </td>
+
+      <td>
+	<h3>DVD ISO Configuration</h3>
+	{{ render_field(form.product) }}
+	{{ render_field(form.version)}}
+	{{ render_field(form.flavor)}}
+	{{ render_field(form.config_boot)}}
+	{{ render_field(form.remoteconfig_boot)}}
+	{{ render_field(form.nvr) }}
+	{{ render_field(form.bid) }}
+      </td>
+
+
+      <td>
+	<h3>Live Image Configuration</h3>
+	{{ render_field(form.product) }}
+	{{ render_field(form.title) }}
+	{{ render_field(form.label) }}
+	{{ render_field(form.version) }}
+	{{ render_field(form.config_live)}}
+	{{ render_field(form.remoteconfig_live)}}
+	{{ render_field(form.nvr) }}
+	{{ render_field(form.bid) }}
+      </td>
+    </tr>
+    
+    <tr>
+      <td>
+      </td>
+      <td>
+      </td>
+      <td>
+      <p><input type=submit value=Submit Build Request>
+      </td>
+    </tr>
+  </table>
+
+</form>
