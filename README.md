@@ -16,7 +16,7 @@ STATUS
 ------
 
 + Tested to be working for i686 images
-+ Copies the image(s) to the designated FTP location specified in staging
++ Copies the image(s) to the designated FTP location specified in staging.
 + Can use multiple worker nodes to build images (Only tested for i686)
 
 
@@ -32,6 +32,8 @@ TODO
 + Logging
 + Email notification
 + Enhanced UI (dynamic forms?)
++ Need to think more on how the images will be stored and ability to identify
+  an existing image uniquely. Timestamp?
 
 
 TESTING
