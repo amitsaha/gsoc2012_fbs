@@ -4,7 +4,7 @@ gsoc2012_fbs
 [On-Demand Fedora Build Service](http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001)
 
 SOURCE TOUR
-============
+-----------
 
 + webapp: Web application lives in app.py. Begin there.
 + image_builder: Working snapshot of image building code
@@ -13,15 +13,16 @@ SOURCE TOUR
 
 
 STATUS
-======
+------
 
 + Tested to be working for i686 images
 + Copies the image(s) to the designated FTP location specified in staging
-+ Can use multiple worker nodes to build images (testing needed)
++ Can use multiple worker nodes to build images (Only tested for i686)
 
 
 TODO
-====
+----
+
 + Script to install dependencies
 + Finish the cli client in webapp/
 + x86_64 images
@@ -34,6 +35,6 @@ TODO
 
 
 TESTING
-======
+-------
 
 Its a little convoluted. Promise it will be up soon.
