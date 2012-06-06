@@ -3,8 +3,37 @@ gsoc2012_fbs
 
 [On-Demand Fedora Build Service](http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001)
 
-+ webapp: Web application -- the front end.
-+ image_builder: Working snapshot of image building code
-+ scripts/: Throw-away scripts
+SOURCE TOUR
+============
 
-Await further details, please.
++ webapp: Web application lives in app.py. Begin there.
++ image_builder: Working snapshot of image building code
++ worker_src: Sources which has to be copied to the worker and celeryd should be started from this directory, where the sources are copied. The image building code is same as in image_builder/, and tasks.py from webapp. They have to be the same!
++ scripts: Throw-away scripts
+
+
+STATUS
+======
+
++ Tested to be working for i686 images
++ Copies the image(s) to the designated FTP location specified in staging
++ Can use multiple worker nodes to build images (testing needed)
+
+
+TODO
+====
++ Script to install dependencies
++ Finish the cli client in webapp/
++ x86_64 images
++ Automatically copy the worker_src to celery workers
++ Unit testing 
++ Implement error handling on the client UI
++ Logging
++ Email notification
++ Enhanced UI (dynamic forms?)
+
+
+TESTING
+======
+
+Its a little convoluted. Promise it will be up soon.
