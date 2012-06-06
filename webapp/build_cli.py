@@ -1,4 +1,5 @@
 # Command line interface to the image building code
+# INCOMPLETE
 
 from celery.execute import send_task
 from tasks import build
