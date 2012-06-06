@@ -34,7 +34,7 @@ class BuildConfigForm(Form):
                         ('dvd', 'DVD'), ('live', 'Live Image')])
     arch=SelectField(u'Architecture', choices=[('i686', 'i686'), \
                         ('x86_64', 'x86_64')])
-    staging=TextField(u'Staging area')
+    staging=TextField(u'Staging FTP URL (No ftp://)')
     email = TextField('Email Address', [validators.Length(min=6, max=35)])
     product=SelectField(u'Product',choices=[('fedora','Fedora')])
     release=SelectField(u'Release',choices=[('17','17'),('18','18'),('rawhide','rawhide')])
@@ -44,13 +44,17 @@ class BuildConfigForm(Form):
     gold = BooleanField(u'Gold?')
     updates=BooleanField(u'Enable updates?')
     updates_testing=BooleanField(u'Enable updates-testing?')
-    nvr=TextField('NVR of extra packages')
-    bid=TextField('BuildIDs of extra packages')
+    nvr_boot=TextField('NVR of extra packages (Multiple separate by ;)')
+    bid_boot=TextField('BuildIDs of extra packages (Multiple separate by ;)')
+    nvr_dvd=TextField('NVR of extra packages(Multiple separate by ;)')
+    bid_dvd=TextField('BuildIDs of extra packages(Multiple separate by ;)')
     flavor=TextField(u'Flavor')
-    config_boot=FileField('Kickstart file')
-    remoteconfig_boot=TextField(u'Kickstart file URL')
+    config_dvd=FileField('Kickstart file')
+    remoteconfig_dvd=TextField(u'Kickstart file URL')
     config_live=FileField('Kickstart file')
     remoteconfig_live=TextField(u'Kickstart file URL')
+    nvr_live=TextField('NVR of extra packages(Multiple separate by ;)')
+    bid_live=TextField('BuildIDs of extra packages (Multiple separate by ;)')
     label=TextField(u'Label')
     title=TextField(u'Title')
 
@@ -127,10 +131,10 @@ def parse_data(request,form):
             proxy=form.proxy.data
             f.write('proxy={0:s}\n'.format(proxy))
             
-            nvr=form.nvr.data
+            nvr=form.nvr_boot.data
             f.write('nvr={0:s}\n'.format(nvr))
 
-            bid=form.bid.data
+            bid=form.bid_boot.data
             f.write('bid={0:s}\n'.format(bid))                     
 
             # TODO: Better idea?
@@ -150,10 +154,10 @@ def parse_data(request,form):
             flavor=form.flavor.data
             f.write('flavor={0:s}\n'.format(flavor))
 
-            nvr=form.nvr.data
+            nvr=form.nvr_dvd.data
             f.write('nvr={0:s}\n'.format(nvr))
 
-            bid=form.bid.data
+            bid=form.bid_dvd.data
             f.write('bid={0:s}\n'.format(bid))                     
 
             # TODO: Better idea?
@@ -176,7 +180,7 @@ def parse_data(request,form):
             f.write('force={0:s}\n'.format(force))                     
             f.write('stage={0:s}\n'.format(stage))                     
             
-            file = request.files['config_boot']
+            file = request.files['config_dvd']
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
@@ -195,15 +199,15 @@ def parse_data(request,form):
             release=form.release.data
             f.write('releasever={0:s}\n'.format(release))
 
-            nvr=form.nvr.data
+            nvr=form.nvr_live.data
             f.write('nvr={0:s}\n'.format(nvr))
 
-            bid=form.bid.data
+            bid=form.bid_live.data
             f.write('bid={0:s}\n'.format(bid))                     
 
             # TODO: Better idea?
             # defaults
-            tmpdir='/tmp/pungi_work'
+            tmpdir='/tmp/live_work'
             cachedir='/var/cache/liveimage'
             logfile='/tmp/liveimage.log'
 
@@ -254,12 +258,10 @@ def delegate():
     config = ConfigParser.RawConfigParser()
     config.read('data/config/imagebuild.conf')
     if config.has_section('dvd'):
-        #TODO: this is a hack to get the filename
-        ks_fname = config.get('dvd','config').split('/')[3]
+        head,ks_fname = os.path.split(config.get('dvd','config'))
     else:
         if config.has_section('live'):
-            #TODO: this is a hack to get the filename
-            ks_fname = config.get('live','config').split('/')[3]
+            head,ks_fname = os.path.split(config.get('live','config'))
         else:
             ks_fname = None
 
@@ -302,7 +304,6 @@ def index():
 
 
 if __name__ == "__main__":
-    # TODO: good idea?
     import sys
     sys.path.append('../image_builder')
 
