@@ -29,9 +29,9 @@ from image_builder.worker import Worker
 
 class ImageBuild():
 
-    def __init__(self):
+    def __init__(self,build_config):
 
-        self.build_config='/etc/imagebuild/imagebuild.conf'
+        self.build_config=build_config
         self.possible_types = ['boot','dvd','live']
 
         # Read configuration
@@ -49,41 +49,49 @@ class ImageBuild():
         # boot
         if self.iso_type == 'boot':
             print 'Building Boot ISO'
-            worker=Worker()
+            worker=Worker(self.build_config)
             self.imgloc=worker.build_bootiso()
             self.transfer()
 
         # DVD
         if self.iso_type == 'dvd':
             print'Building DVD'
-            worker=Worker()
+            worker=Worker(self.build_config)
             self.imgloc=worker.build_dvd()
             self.transfer()
         
         #Live image
         if self.iso_type == 'live':
             print 'Building Live Image'
-            worker=Worker()
+            worker=Worker(self.build_config)
             self.imgloc=worker.build_live()
             self.transfer()
 
         
     #transfer to staging
-    # uses SCP
-    # use a Python module?
-    # such as http://www.lag.net/paramiko/
+    #uses FTP 
     def transfer(self):
 
+        from ftplib import FTP
+        ftp=FTP(self.staging)
+
+        # anonymous
+        ftp.login()
+
+        # assumes a 'pub' directory where the files are to be 
+        # put
+        ftp.cwd('pub')
+
+        # transfer the files
         for img in self.imgloc:
-            args=[img,self.staging]
-
-            # setup 'scp' and fire
-            process_call = ['scp']
-            process_call.extend(args)
-
             print 'Transfering {0:s} to {1:s}'.format(img,self.staging)
-            subprocess.call(process_call)   
+            with open(img) as f:
+                # extract the filename from 'img'
+                head,fname=os.path.split(img)
+                ftp.storbinary('STOR {0:s}'.format(fname),f)
 
+        # end ftp session
+        ftp.close()
         return
 
 

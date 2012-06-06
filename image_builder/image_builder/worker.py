@@ -31,19 +31,15 @@ from image_builder.bootiso import Bootiso
 
 class Worker():
 
-    def __init__(self):
+    def __init__(self,buildconfig):
 
         self.possible_arches = ['i386','i686','x86_64']
         self.possible_products = ['fedora']
-        self.possible_releases = ['17', 'rawhide']
+        self.possible_releases = ['17', '18','rawhide']
 
 
         #Install image specifications
-        self.boot_config = '/etc/imagebuild/boot.conf'
-        #repository config
-        self.repo_config = '/etc/imagebuild/repoinfo.conf'
-        self.pungi_config= '/etc/imagebuild/pungi.conf'
-        self.live_config = '/etc/imagebuild/live.conf'
+        self.imageconfig = buildconfig
 
         # Koji
         self.kojihub_url = 'http://koji.fedoraproject.org/kojihub'
@@ -102,36 +98,31 @@ class Worker():
         return repo_url
 
 
-    # Gather repository list from repoinfo.conf
-    def gather_repos(self,release, arch):
-        # read repo configuration
-    
-        # The mirrorlist and repositories uses i386 as $arch, instead of
-        # i686
-        if arch=='i686':
-            arch='i386'
+    # Gather repository list from imagebuild.conf
+    def gather_repos(self,release):
 
-        config = ConfigParser.SafeConfigParser({'arch':arch})
-        config.read(self.repo_config)
+        # read repo configuration
+        config = ConfigParser.SafeConfigParser()
+        config.read(self.imageconfig)
 
         reponames = [ release ]
 
-        updates=config.get('DEFAULT','updates')
-        testing=config.get('DEFAULT','updates-testing')
+        updates=config.get('boot','updates')
+        testing=config.get('boot','updates-testing')
 
         if updates=='1':
-            reponames.append('%s-updates' % release)
+            reponames.append('{0:s}-updates'.format(release))
 
         if testing=='1':
-            reponames.append('%s-updates-testing' % release)
+            reponames.append('{0:s}-updates-testing'.format(release))
 
         repos = []
         mirrors = []
         for name in reponames:
             # repos
-            repos.append(config.get(name, 'url'))
+            repos.append(config.get('boot', '{0:s}_url'.format(name)))
             # mirrorlist
-            mirrors.append(config.get(name,'mirror'))
+            mirrors.append(config.get('boot','{0:s}_mirror'.format(name)))
 
         return repos,mirrors
 
@@ -140,15 +131,15 @@ class Worker():
 
         # Read pungi configuration
         config = ConfigParser.SafeConfigParser()
-        config.read(self.boot_config)
+        config.read(self.imageconfig)
 
         arch=config.get('DEFAULT','arch')
-        outdir=config.get('DEFAULT','outdir')
-        workdir=config.get('DEFAULT','workdir')
-        product=config.get('DEFAULT','product')
-        release=config.get('DEFAULT','release')
-        version=config.get('DEFAULT','version')
-        proxy=config.get('DEFAULT','proxy')
+        outdir=config.get('boot','outdir')
+        workdir=config.get('boot','workdir')
+        product=config.get('boot','product')
+        release=config.get('boot','release')
+        version=config.get('boot','version')
+        proxy=config.get('boot','proxy')
     
         if proxy=='':
             proxy=None
@@ -166,11 +157,11 @@ class Worker():
 
 
         # gather repos and mirrors
-        repos,mirrors = self.gather_repos(release,arch)
+        repos,mirrors = self.gather_repos(release)
 
         # Create the side repository if needed
-        nvr=config.get('DEFAULT','nvr')
-        bid=config.get('DEFAULT','bid')
+        nvr=config.get('boot','nvr')
+        bid=config.get('boot','bid')
 
         rpms_nvr=[]
         if nvr!='':
@@ -205,46 +196,43 @@ class Worker():
     # DVD Image
     def build_dvd(self):
         # See: https://fedorahosted.org/pungi/wiki/PungiDocs/RunningPungi
-        # TODO: Architecture - if the desired architecture sought is different from the
-        # host arch, use 'mock (?)'
-
         # Read pungi configuration
         config = ConfigParser.SafeConfigParser()
-        config.read(self.pungi_config)
+        config.read(self.imageconfig)
 
         args=[]
 
-        name=config.get('DEFAULT','name')    
+        name=config.get('dvd','name')    
         args.extend(['--name', name])
 
-        ver=config.get('DEFAULT','ver')    
+        ver=config.get('dvd','version')    
         args.extend(['--ver', ver])
 
-        flavor=config.get('DEFAULT','flavor')    
+        flavor=config.get('dvd','flavor')    
         args.extend(['--flavor', flavor])
 
-        destdir=config.get('DEFAULT','destdir')    
+        destdir=config.get('dvd','destdir')    
         args.extend(['--destdir', destdir])
     
-        cachedir=config.get('DEFAULT','cachedir')    
+        cachedir=config.get('dvd','cachedir')    
         args.extend(['--cachedir',  cachedir])
 
-        bugurl=config.get('DEFAULT','bugurl') 
+        bugurl=config.get('dvd','bugurl') 
         args.extend(['--bugurl',  bugurl])
 
-        nosource=config.get('DEFAULT','nosource')
+        nosource=config.get('dvd','nosource')
         if nosource=='1':
             args.extend(['--nosource'])
     
-            sourceisos=config.get('DEFAULT','sourceisos')
+            sourceisos=config.get('dvd','sourceisos')
         if sourceisos=='1':
             args.extend(['--sourceisos'])
 
-        force=config.get('DEFAULT','force')
+        force=config.get('dvd','force')
         if force=='1':
             args.extend(['--force'])
 
-        stage=config.get('DEFAULT','stage')
+        stage=config.get('dvd','stage')
         allowed_stages=['all','-G','-C','-B','-I']
 
         if stage in allowed_stages:
@@ -255,15 +243,15 @@ class Worker():
         else:
             print 'Invalid stage entered'
                         
-        ks=config.get('DEFAULT','config')
+        ks=config.get('dvd','config')
         args.extend(['-c', ks])
 
         # Create the side repository if needed
-        nvr=config.get('DEFAULT','nvr')
-        bid=config.get('DEFAULT','bid')
+        nvr=config.get('dvd','nvr')
+        bid=config.get('dvd','bid')
 
         arch=config.get('DEFAULT','arch')
-        workdir=config.get('DEFAULT','workdir')
+        workdir=config.get('dvd','workdir')
     
         rpms_nvr=[]
         if nvr!='':
@@ -296,14 +284,11 @@ class Worker():
             arch='i386'
 
         # for DVD iso
-        imgloc=['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-DVD.iso'\
-                    .format(os.path.abspath(destdir),ver,flavor,arch,name)]
+        imgloc=['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-DVD.iso'.format(os.path.abspath(destdir),ver,flavor,arch,name)]
         # for Netinstall ISO
-        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-netinst.iso'\
-                           .format(os.path.abspath(destdir),ver,flavor,arch,name)])
+        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-netinst.iso'.format(os.path.abspath(destdir),ver,flavor,arch,name)])
         # for checksum
-        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-CHECKSUM'\
-                           .format(os.path.abspath(destdir),ver,flavor,arch,name)])
+        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-CHECKSUM'.format(os.path.abspath(destdir),ver,flavor,arch,name)])
 
         return imgloc
 
@@ -316,45 +301,45 @@ class Worker():
 
         # Read pungi configuration
         config = ConfigParser.SafeConfigParser()
-        config.read(self.live_config)
+        config.read(self.imageconfig)
 
         args=[]
 
-        ks=config.get('DEFAULT','config')
+        ks=config.get('live','config')
         args.extend(['-c', ks])
 
-        label=config.get('DEFAULT','label')
+        label=config.get('live','label')
         args.extend(['-f', label])
 
-        title=config.get('DEFAULT','title')
+        title=config.get('live','title')
         args.extend(['--title', title])
     
-        product=config.get('DEFAULT','product')
+        product=config.get('live','product')
         args.extend(['--product', product])
     
-        releasever=config.get('DEFAULT','releasever')
+        releasever=config.get('live','releasever')
         args.extend(['--releasever', releasever])
         
-        arch=config.get('DEFAULT','arch')
+        arch=config.get('live','arch')
         yb = yum.YumBase()
     
         if arch!=yb.arch.canonarch:
             print 'Live image arch should be the same as the build arch'
             sys.exit(1)
     
-        tmpdir=config.get('DEFAULT','tmpdir')
+        tmpdir=config.get('live','tmpdir')
         args.extend(['-t', tmpdir])
 
-        cachedir=config.get('DEFAULT','cachedir')
+        cachedir=config.get('live','cachedir')
         args.extend(['--cache', cachedir])
 
-        logfile=config.get('DEFAULT','logfile')
+        logfile=config.get('live','logfile')
         args.extend(['--logfile', logfile])
 
 
         # Create the side repository if needed
-        nvr=config.get('DEFAULT','nvr')
-        bid=config.get('DEFAULT','bid')
+        nvr=config.get('live','nvr')
+        bid=config.get('live','bid')
 
         rpms_nvr=[]
         if nvr!='':
@@ -373,7 +358,7 @@ class Worker():
         # prepare side repository
         rpms = rpms_nvr
         arch=config.get('DEFAULT','arch')
-        tmpdir=config.get('DEFAULT','tmpdir')
+        tmpdir=config.get('live','tmpdir')
 
         if len(rpms) > 0:
             siderepo = self.prep_siderepo(tmpdir, rpms, arch)
