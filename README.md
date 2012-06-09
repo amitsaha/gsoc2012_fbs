@@ -11,6 +11,17 @@ SOURCE TOUR
 + worker_src: Sources which has to be copied to the worker and celeryd should be started from this directory, where the sources are copied. The image building code is same as in image_builder/, and tasks.py from webapp. They have to be the same!
 + scripts: Throw-away scripts
 
+DEPENDENCIES
+------------
+
+The Web application's dependencies can be installed by:
+
+# yum install python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server
+
+On the build node(s), the following dependencies are to be installed:
+
+# yum install koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server
+
 
 STATUS
 ------
@@ -34,9 +45,3 @@ TODO
 + Enhanced UI (dynamic forms?)
 + Need to think more on how the images will be stored and ability to identify
   an existing image uniquely. Timestamp?
-
-
-TESTING
--------
-
-Its a little convoluted. Promise it will be up soon.
