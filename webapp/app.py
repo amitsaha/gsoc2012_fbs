@@ -304,8 +304,6 @@ def index():
 
 
 if __name__ == "__main__":
-    import sys
-    sys.path.append('../image_builder')
 
     # cleanup data to start with and
     # create data/config and data/kickstarts
