@@ -109,10 +109,14 @@ def create_workdir_master():
 
 @task
 @hosts(workers)
-def create_workdir_worker():
+def create_workdir_workers():
     # create the work dirs if they do not exist
-    run('sudo mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
+    run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
     
+
+#TODO: use 'put' instead of 'scp'
+#TODO: could probably have a lot of this code run as local in
+# deploy_* tasks
 
 @task
 @hosts('localhost')
@@ -130,22 +134,22 @@ def copy_files():
 
     # copy image_builder, setup.py, tasks.py
     for worker in workers:
-        run('sudo scp -r {0:s} {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
-        run('sudo scp -r {0:s}/tasks.py {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
-        run('sudo scp -r {0:s} {1:s}:{2:s}/'.format(image_builder,master,os.path.abspath(worker_workdir)))
-        run('sudo scp {0:s} {1:s}:{2:s}/'.format(setuppy,master,os.path.abspath(worker_workdir)))
+        run('scp -r {0:s} {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
+        run('scp -r {0:s}/tasks.py {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
+        run('scp -r {0:s} {1:s}:{2:s}/'.format(image_builder,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s} {1:s}:{2:s}/'.format(setuppy,master,os.path.abspath(worker_workdir)))
         
     # celeryconfig,zdaemon
     for worker in workers_i686:
-        run('sudo scp {0:s}/celeryconfig_i686.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/celeryconfig_i686.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
         #zdaemon_worker.conf
-        run('sudo scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
         
 
     for worker in workers_x86_64:
-        run('sudo scp {0:s}/celeryconfig_x86_64.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/celeryconfig_x86_64.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
         #zdaemon_worker.conf
-        run('sudo scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
 
 @task
 @hosts(master)
@@ -164,5 +168,6 @@ def deploy_workers():
     for worker in workers:
         # Install image_builder
         print 'Installing image_builder library on {0:s}'.format(worker)
-        run('cd {0:s}/;sudo python setup.py install'.format(worker_workdir))
-        run('sudo /usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
+        run('cd {0:s}/;python setup.py install'.format(worker_workdir))
+        run('service rabbitmq-server start')
+        run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
