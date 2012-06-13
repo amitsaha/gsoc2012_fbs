@@ -14,13 +14,17 @@ SOURCE TOUR
 DEPENDENCIES
 ------------
 
+On the node used for deployment (using deploy.py), you need 'fabric' installed:
+
++ # yum install fabric
+
 The Web application's dependencies can be installed by:
 
-+ #yum install python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server
++ #yum install python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server 
 
 On the build node(s), the following dependencies are to be installed:
 
-+ #yum install koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server
++ #yum install koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon
 
 
 STATUS
