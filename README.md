@@ -38,7 +38,7 @@ STATUS
 TODO
 ----
 
-+ Script to install dependencies
++ <strike>Script to install dependencies</strike> (will use deploy.py task)
 + Finish the cli client in webapp/
 + x86_64 images
 + Automatically copy the worker_src to celery workers
