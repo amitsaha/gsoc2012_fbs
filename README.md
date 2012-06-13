@@ -38,13 +38,13 @@ STATUS
 TODO
 ----
 
-+ <strike>Script to install dependencies</strike> (will use deploy.py task)
++ Script to install dependencies (will use deploy.py task)
 + Finish the cli client in webapp/
 + x86_64 images
-+ Automatically copy the worker_src to celery workers
++ Automatically copy the worker_src to celery workers (DONE)
 + Unit testing 
 + Implement error handling on the client UI
-+ Logging
++ Logging (DONE)
 + Email notification
 + Enhanced UI (dynamic forms?)
 + Need to think more on how the images will be stored and ability to identify
