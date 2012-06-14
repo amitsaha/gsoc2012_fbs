@@ -46,7 +46,7 @@ Then, run the tasks from deploy.py (Note that the SSH server must be
 running and accepting connections on the master and the workers). The
 fabric file currently performs a number of separate tasks:
 
-$ fab -f /home/gene/gsoc/gsoc2012_fbs/deploy.py --list
+$ fab -f /path/to/deploy.py --list
 Available commands:
 
     copy_files
@@ -60,7 +60,7 @@ Available commands:
 If you are setting up image_builder for the first time, you should run
 all the tasks (in order specified), like so:
 
-$ fab -f /home/gene/gsoc/gsoc2012_fbs/deploy.py
+$ fab -f /path/to/deploy.py
 install_packages_worker install_packages_master create_workdir_master
 create_workdir_workers copy_files deploy_webapp deploy_workers
 
