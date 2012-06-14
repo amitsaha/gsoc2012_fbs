@@ -3,14 +3,6 @@ gsoc2012_fbs
 
 [On-Demand Fedora Build Service](http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001)
 
-SOURCE TOUR
------------
-
-+ webapp: Web application lives in app.py. Begin there.
-+ image_builder: Working snapshot of image building code
-+ worker_src: Sources which has to be copied to the worker and celeryd should be started from this directory, where the sources are copied. The image building code is same as in image_builder/, and tasks.py from webapp. They have to be the same!
-+ scripts: Throw-away scripts
-
 DEPENDENCIES
 ------------
 
