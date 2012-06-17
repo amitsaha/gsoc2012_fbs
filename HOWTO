@@ -1,5 +1,6 @@
 	                	    Deploying the Image builder Service
 				       Version 0.1 - June 14, 2012
+				  Version 0.1 (Modified) - June 17, 2012
        				       	       DRAFT
 
 
@@ -49,20 +50,19 @@ fabric file currently performs a number of separate tasks:
 $ fab -f /path/to/deploy.py --list
 Available commands:
 
-    copy_files
-    create_workdir_master
-    create_workdir_workers
-    deploy_webapp
-    deploy_workers
-    install_packages_master
-    install_packages_workers
+    copy_files_master         Copy the files to the 'master' from which the web
+    copy_files_workers        Copy the files to the workers where the build tasks
+    deploy_webapp             Deploy the web application
+    deploy_workers            Deploy the workers. Basically start celeryd
+    install_packages_master   Install dependencies on the 'master' where the
+    install_packages_workers  Install dependencies on the workers
+
 
 If you are setting up image_builder for the first time, you should run
 all the tasks (in order specified), like so:
 
 $ fab -f /path/to/deploy.py
-install_packages_worker install_packages_master create_workdir_master
-create_workdir_workers copy_files deploy_webapp deploy_workers
+install_packages_worker install_packages_master copy_files_master copy_files_worker deploy_webapp deploy_workers
 
 in a single command. You may also run each task separately. You will
 need to enter the appropriate password a number of times. So if you
