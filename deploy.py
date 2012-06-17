@@ -108,7 +108,7 @@ def install_packages_master():
     web application will run
     """
 
-    deps = 'python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server'
+    deps = 'python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server python-zdaemon'
     run('sudo yum --assumeyes install {0:s}'.format(deps)) 
     
 @task
@@ -117,7 +117,7 @@ def install_packages_workers():
     """ Install dependencies on the workers"""
 
     deps = 'koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon'
-    run('sudo yum --assumeyes install {0:s}'.format(deps))
+    run('yum --assumeyes install {0:s}'.format(deps))
     
 @task
 @hosts(master)
