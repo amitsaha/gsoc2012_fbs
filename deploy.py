@@ -22,18 +22,20 @@
 # This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
 # to deploy image_builder
 
-from fabric.api import task, run, hosts
+from fabric.api import task, run, hosts, cd, env
+from fabric.operations import put
+
 import ConfigParser
 import os
 
 # config file
-deploy_conf  =  'conf/deploy.conf'
+deploy_conf = 'conf/deploy.conf'
 
 #workers
-workers  =  []
+workers = []
 
 # Read configuration
-config  =  ConfigParser.SafeConfigParser()
+config = ConfigParser.SafeConfigParser()
 config.read(deploy_conf)
 
 # Read broker config
@@ -77,98 +79,109 @@ with open('conf/zdaemon_master.conf','w') as f:
     f.write('program python {0:s}/webapp/app.py\n'.format(master_workdir))
     f.write('directory {0:s}/webapp\n'.format(master_workdir))
     f.write('transcript {0:s}/zdaemon_webapp.log\n'.format(master_workdir))
+    f.write('socket-name {0:s}/webapp.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
 
 # setup zdaemon_celeryd.conf for celeryd
 with open('conf/zdaemon_worker.conf','w') as f:
     import time
     f.write('<runner>\n')
-    logfile = '{0:s}/celery_{1:s}.log'.format(worker_workdir,str(time.time()).split('.')[0])
+    logfile = '{0:s}/celery_{1:s}.log'.format(worker_workdir,(str
+                                     (time.time()).split('.')[0]))
     f.write('program /usr/bin/celeryd --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
     f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
 
-
 @task
 @hosts(master)
 def install_packages_master():
-    run('sudo yum --assumeyes install python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server')
+    """ Install dependencies on the 'master' where the
+    web application will run
+    """
+
+    deps = 'python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server'
+    run('sudo yum --assumeyes install {0:s}'.format(deps)) 
     
 @task
 @hosts(workers)
 def install_packages_workers():
-    run('sudo yum --assumeyes install koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon')
+    """ Install dependencies on the workers"""
+
+    deps = 'koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon'
+    run('sudo yum --assumeyes install {0:s}'.format(deps))
     
-   
 @task
 @hosts(master)
-def create_workdir_master():
-    # create the work dirs if they do not exist
-    run('mkdir -p {0:s}'.format(os.path.abspath(master_workdir)))
+def copy_files_master():
+    """ Copy the files to the 'master' from which the web 
+    applicaiton will be serving requests
+    """
 
-@task
-@hosts(workers)
-def create_workdir_workers():
-    # create the work dirs if they do not exist
-    run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
-    
-
-#TODO: use 'put' instead of 'scp'
-#TODO: could probably have a lot of this code run as local in
-# deploy_* tasks
-
-@task
-@hosts('localhost')
-def copy_files():
     webapp = os.path.abspath('webapp')
     setuppy = os.path.abspath('setup.py')
     image_builder = os.path.abspath('image_builder')
     conf = os.path.abspath('conf')
+    zdaemon = '{0:s}/zdaemon_master.conf'.format(conf)
 
-    # copy webapp and image_builder+setup.py to master
-    run('scp  {0:s}/ {1:s}:{2:s}/'.format(setuppy,master,os.path.abspath(master_workdir)))
-    run('scp -r {0:s}/ {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(master_workdir)))
-    run('scp -r {0:s}/ {1:s}:{2:s}/'.format(image_builder,master,os.path.abspath(master_workdir)))
-    run('scp {0:s}/zdaemon_master.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(master_workdir)))
+    # create the work dirs if they do not exist
+    run('mkdir -p {0:s}'.format(os.path.abspath(master_workdir)))
 
-    # copy image_builder, setup.py, tasks.py
-    for worker in workers:
-        run('scp -r {0:s} {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
-        run('scp -r {0:s}/tasks.py {1:s}:{2:s}/'.format(webapp,master,os.path.abspath(worker_workdir)))
-        run('scp -r {0:s} {1:s}:{2:s}/'.format(image_builder,master,os.path.abspath(worker_workdir)))
-        run('scp {0:s} {1:s}:{2:s}/'.format(setuppy,master,os.path.abspath(worker_workdir)))
-        
-    # celeryconfig,zdaemon
-    for worker in workers_i686:
-        run('scp {0:s}/celeryconfig_i686.py {1:s}:{2:s}/celeryconfig.py'.format(conf,worker,os.path.abspath(worker_workdir)))
-        #zdaemon_worker.conf
-        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,worker,os.path.abspath(worker_workdir)))
-        
+    put(setuppy, os.path.abspath(master_workdir), use_sudo=True)
+    put(webapp, os.path.abspath(master_workdir), use_sudo=True)
+    put(image_builder, os.path.abspath(master_workdir), use_sudo=True)
+    put(zdaemon, os.path.abspath(master_workdir), use_sudo=True)
 
-    for worker in workers_x86_64:
-        run('scp {0:s}/celeryconfig_x86_64.py {1:s}:{2:s}/celeryconfig.py'.format(conf,worker,os.path.abspath(worker_workdir)))
-        #zdaemon_worker.conf
-        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,worker,os.path.abspath(worker_workdir)))
+    return
+
+@task
+@hosts(workers)
+def copy_files_workers():
+    """ Copy the files to the workers where the build tasks
+    will be performed
+    """
+    webapp = os.path.abspath('webapp')
+    taskspy = '{0:s}/tasks.py'.format(webapp)
+    setuppy = os.path.abspath('setup.py')
+    image_builder = os.path.abspath('image_builder')
+    conf = os.path.abspath('conf')
+    celeryconfig_i686 = '{0:s}/celeryconfig_i686.py'.format(conf)
+    celeryconfig_x86_64 = '{0:s}/celeryconfig_x86_64.py'.format(conf)
+    celeryconfig = '{0:s}/celeryconfig.py'.format(worker_workdir)
+    zdaemon = '{0:s}/zdaemon_worker.conf'.format(conf)
+
+    # create the work dirs if they do not exist
+    run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
+    
+    # copy image_builder,  setup.py,  tasks.py
+    put(setuppy, os.path.abspath(worker_workdir), use_sudo=True)
+    put(taskspy, os.path.abspath(worker_workdir), use_sudo=True)
+    put(image_builder, os.path.abspath(worker_workdir), use_sudo=True)
+    put(zdaemon, os.path.abspath(worker_workdir), use_sudo=True)
+
+    if env.host_string in workers_i686:
+        put(celeryconfig_i686, celeryconfig, use_sudo=True)
+
+    if env.host_string in workers_x86_64:
+        put(celeryconfig_x86_64, celeryconfig, use_sudo=True)
 
 @task
 @hosts(master)
 def deploy_webapp():
-    # Install image_builder
-    print 'Installing image_builder library on {0:s}'.format(master)
-    run('cd {0:s}/;sudo python setup.py install'.format(master_workdir))
-    # then run webapp in background
-    print 'Starting Web application'
-    run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
+    """ Deploy the web application"""
+
+    with cd(master_workdir):
+        run('sudo python setup.py install')
+        print 'Starting Web application'
+        run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
     
 @task
 @hosts(workers)
 def deploy_workers():
-    import time
-    for worker in workers:
-        # Install image_builder
-        print 'Installing image_builder library on {0:s}'.format(worker)
-        run('cd {0:s}/;python setup.py install'.format(worker_workdir))
+    """ Deploy the workers. Basically start celeryd"""
+
+    with cd(worker_workdir):
+        run('python setup.py install')
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
