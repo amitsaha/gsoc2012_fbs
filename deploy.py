@@ -13,7 +13,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
 
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 #          http://fedoraproject.org/wiki/User:Amitksaha
@@ -21,54 +22,54 @@
 # This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
 # to deploy image_builder
 
-from fabric.api import task,run,hosts
+from fabric.api import task, run, hosts
 import ConfigParser
 import os
 
 # config file
-deploy_conf='conf/deploy.conf'
+deploy_conf  =  'conf/deploy.conf'
 
 #workers
-workers=[]
+workers  =  []
 
 # Read configuration
-config = ConfigParser.SafeConfigParser()
+config  =  ConfigParser.SafeConfigParser()
 config.read(deploy_conf)
 
 # Read broker config
-i686_broker=config.get('broker','i686')
-x86_64_broker=config.get('broker','x86_64')
+i686_broker  =  config.get('broker','i686')
+x86_64_broker  =  config.get('broker','x86_64')
 
 # Read master config
-master=config.get('master','host')
-master_workdir=config.get('master','workdir')
+master = config.get('master','host')
+master_workdir = config.get('master','workdir')
 
 # Read worker config
-workers_i686=config.get('workers','i686')
-workers_i686=workers_i686.split(';')
-workers_x86_64=config.get('workers','x86_64')
-workers_x86_64=workers_x86_64.split(';')
-worker_workdir=config.get('workers','workdir')
+workers_i686 = config.get('workers','i686')
+workers_i686 = workers_i686.split(';')
+workers_x86_64 = config.get('workers','x86_64')
+workers_x86_64 = workers_x86_64.split(';')
+worker_workdir = config.get('workers','workdir')
 workers.extend(workers_i686)
 workers.extend(workers_x86_64)
 
 # Setup nodes.conf in webapp/
 with open('webapp/nodes.conf','w') as f:
     f.write('[i686]\n')
-    f.write('broker_url={0:s}\n'.format(i686_broker))
+    f.write('broker_url = {0:s}\n'.format(i686_broker))
     f.write('[x86_64]\n')
-    f.write('broker_url={0:s}\n'.format(x86_64_broker))
+    f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
 
 # setup conf/celeryconfig_i686.py for workers
 # setup conf/celeryconfig_x86_64.py for workers
 with open('conf/celeryconfig_i686.py','w') as f:
-    f.write('BROKER_URL = {0:s}\n'.format(i686_broker))
-    f.write('CELERY_IMPORTS = ("tasks", )\n')
+    f.write('BROKER_URL  =  {0:s}\n'.format(i686_broker))
+    f.write('CELERY_IMPORTS  =  ("tasks", )\n')
 
 with open('conf/celeryconfig_x86_64.py','w') as f:
-    f.write('BROKER_URL = {0:s}\n'.format(x86_64_broker))
-    f.write('CELERY_IMPORTS = ("tasks", )\n')
+    f.write('BROKER_URL  =  {0:s}\n'.format(x86_64_broker))
+    f.write('CELERY_IMPORTS  =  ("tasks", )\n')
 
 # setup zdaemon_master.conf for Flask
 with open('conf/zdaemon_master.conf','w') as f:
@@ -82,7 +83,7 @@ with open('conf/zdaemon_master.conf','w') as f:
 with open('conf/zdaemon_worker.conf','w') as f:
     import time
     f.write('<runner>\n')
-    logfile='{0:s}/celery_{1:s}.log'.format(worker_workdir,str(time.time()).split('.')[0])
+    logfile = '{0:s}/celery_{1:s}.log'.format(worker_workdir,str(time.time()).split('.')[0])
     f.write('program /usr/bin/celeryd --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
@@ -121,10 +122,10 @@ def create_workdir_workers():
 @task
 @hosts('localhost')
 def copy_files():
-    webapp=os.path.abspath('webapp')
-    setuppy=os.path.abspath('setup.py')
-    image_builder=os.path.abspath('image_builder')
-    conf=os.path.abspath('conf')
+    webapp = os.path.abspath('webapp')
+    setuppy = os.path.abspath('setup.py')
+    image_builder = os.path.abspath('image_builder')
+    conf = os.path.abspath('conf')
 
     # copy webapp and image_builder+setup.py to master
     run('scp  {0:s}/ {1:s}:{2:s}/'.format(setuppy,master,os.path.abspath(master_workdir)))
@@ -141,15 +142,15 @@ def copy_files():
         
     # celeryconfig,zdaemon
     for worker in workers_i686:
-        run('scp {0:s}/celeryconfig_i686.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/celeryconfig_i686.py {1:s}:{2:s}/celeryconfig.py'.format(conf,worker,os.path.abspath(worker_workdir)))
         #zdaemon_worker.conf
-        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,worker,os.path.abspath(worker_workdir)))
         
 
     for worker in workers_x86_64:
-        run('scp {0:s}/celeryconfig_x86_64.py {1:s}:{2:s}/celeryconfig.py'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/celeryconfig_x86_64.py {1:s}:{2:s}/celeryconfig.py'.format(conf,worker,os.path.abspath(worker_workdir)))
         #zdaemon_worker.conf
-        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,master,os.path.abspath(worker_workdir)))
+        run('scp {0:s}/zdaemon_worker.conf {1:s}:{2:s}/'.format(conf,worker,os.path.abspath(worker_workdir)))
 
 @task
 @hosts(master)
