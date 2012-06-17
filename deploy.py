@@ -19,8 +19,15 @@
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
-# This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
-# to deploy image_builder
+"""
+This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
+to deploy image_builder. See HOWTO here: 
+https://github.com/amitsaha/gsoc2012_fbs/blob/master/HOWTO
+
+TODO: Too many globals being used. The way out is to use a Class
+but to use it with Fabric involves a little convolution. Doable.
+Will do.
+"""
 
 from fabric.api import task, run, hosts, cd, env
 from fabric.operations import put
