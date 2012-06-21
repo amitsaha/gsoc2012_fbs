@@ -13,7 +13,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  
+# 02110-1301, USA.
 
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 #          http://fedoraproject.org/wiki/User:Amitksaha
@@ -21,40 +22,33 @@
 import os
 
 class Transfer:
-
-    def __init__(self,staging,imgloc):
-        self.staging=staging
-        self.imgloc=imgloc
+    """ Image transfer module """
+    def __init__(self, staging, imgloc):
+        self.staging = staging
+        self.imgloc = imgloc
 
     #ftp
     def transfer_ftp(self):
+        """ FTP image transfer """
 
         from ftplib import FTP
-        ftp=FTP(staging)
-
+        ftp = FTP(self.staging)
         # anonymous
         ftp.login()
-
         # assumes a 'pub' directory where the files are to be 
         # put
         ftp.cwd('pub')
-        
         # transfer the files
-        for img in imgloc:
-            print 'Transfering {0:s} to {1:s}'.format(img,staging)
+        for img in self.imgloc:
             with open(img) as f:
                 # extract the filename from 'img'
-                head,fname=os.path.split(img)
-                ftp.storbinary('STOR {0:s}'.format(fname),f)
-
+                head, fname = os.path.split(img)
+                ftp.storbinary('STOR {0:s}'.format(fname), f)
         # end ftp session
         ftp.close()
         return
 
-    # email notification
-    # TBD
-    def notify():
+    def notify(self):
+        """ Send Email notification to the requester"""
+        #TBD
         pass
-
-
-
