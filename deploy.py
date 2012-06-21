@@ -135,10 +135,10 @@ def copy_files_master():
     # create the work dirs if they do not exist
     run('mkdir -p {0:s}'.format(os.path.abspath(master_workdir)))
 
-    put(setuppy, os.path.abspath(master_workdir), use_sudo=True)
-    put(webapp, os.path.abspath(master_workdir), use_sudo=True)
-    put(image_builder, os.path.abspath(master_workdir), use_sudo=True)
-    put(zdaemon, os.path.abspath(master_workdir), use_sudo=True)
+    put(setuppy, os.path.abspath(master_workdir), use_sudo=False)
+    put(webapp, os.path.abspath(master_workdir), use_sudo=False)
+    put(image_builder, os.path.abspath(master_workdir), use_sudo=False)
+    put(zdaemon, os.path.abspath(master_workdir), use_sudo=False)
 
     return
 
@@ -181,7 +181,7 @@ def deploy_webapp():
     with cd(master_workdir):
         run('sudo python setup.py install')
         print 'Starting Web application'
-        run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
+        run('sudo /usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
     
 @task
 @hosts(workers)
