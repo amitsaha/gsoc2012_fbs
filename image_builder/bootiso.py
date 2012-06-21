@@ -13,25 +13,24 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  
+# 02110-1301, USA.
 
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 # 	 http://fedoraproject.org/wiki/User:Amitksaha
 
-from __future__ import print_function
-
 import tempfile
-import subprocess
 import pylorax
 import os
 import ConfigParser
 import yum
-
-# creates a boot ISO
+import shutil
+import sys
 
 class Bootiso():
+    """ Create Boot ISO via lorax """
 
-    def __init__(self, arch, release, version, repos, mirrors, proxy, outputdir,product):
+    def __init__(self, arch, release, version, repos, mirrors, proxy, outputdir, product):
         self.arch = arch
         self.release = release
         self.version = version
@@ -41,11 +40,10 @@ class Bootiso():
         self.outputdir = outputdir
         self.product = product
 
-
-    # adapted from 
-    # http://git.fedorahosted.org/git/?p=lorax.git;a=blob_plain;f=src/sbin/lorax;hb=HEAD
-    def get_yum_base_object(self,installroot, repositories, mirrors, proxy, tempdir="/tmp"):
-        
+    def get_yum_base_object(self, installroot, repositories, mirrors, proxy, tempdir="/tmp"):
+        """ adapted from  
+        http://git.fedorahosted.org/git/?p=lorax.git;a=blob_plain;f=src/sbin/lorax;hb=HEAD
+        """
         def sanitize_repo(repo):
             if repo.startswith("/"):
                 return "file://{0}".format(repo)
@@ -88,27 +86,25 @@ class Bootiso():
         c.add_section(section)
         map(lambda (key, value): c.set(section, key, value), data.items())
 
-        # add the main repository - the first repository from list
+        # add the main repository
         section = "lorax-repo"
         data = {"name": "lorax repo",
                 "#baseurl": repositories[0],
                 "mirrorlist": mirrors[0],
                 "enabled": 1}
 
-
         c.add_section(section)
         map(lambda (key, value): c.set(section, key, value), data.items())
-
 
         # append a blank mirror so as to account for the side repository
         mirrors.append('')
 
         # add the extra repositories and mirrors
-        for n, (repo,mirror) in enumerate(zip(repositories[1:], mirrors[1:])):
+        for n, (repo, mirror) in enumerate(zip(repositories[1:], mirrors[1:])):
             section = "lorax-extra-repo-{0:d}".format(n)
             
             # other repos
-            if n==len(mirrors)-2:
+            if n == len(mirrors)-2:
                 data = {"name": "lorax extra repo {0:d}".format(n),
                         "baseurl": repo,
                         "enabled": 1}
@@ -118,8 +114,6 @@ class Bootiso():
                         "mirrorlist":mirror,
                         "#baseurl": repo,
                         "enabled": 1}
-                
-                
             c.add_section(section)
             map(lambda (key, value): c.set(section, key, value), data.items())
 
@@ -129,15 +123,16 @@ class Bootiso():
 
         # create the yum base object
         yb = yum.YumBase()
-        
         yb.preconf.fn = yumconf
         yb.preconf.root = installroot
     #yb.repos.setCacheDir(cachedir)
 
         return yb
 
-
     def make_iso(self):
+        """ Create yum base object and fire the ISO build 
+        process
+        """
 
         # create the temporary directory for lorax
         tempdir = tempfile.mkdtemp(prefix="lorax.", dir=tempfile.gettempdir())
@@ -151,7 +146,7 @@ class Bootiso():
         yb = self.get_yum_base_object(installtree, self.repos, self.mirrors, self.proxy, yumtempdir)
         
         if yb is None:
-            print("error: unable to create the yumbase object", file=sys.stderr)
+            print "error: unable to create the yumbase object"
             shutil.rmtree(tempdir)
             sys.exit(1)
             
@@ -160,6 +155,6 @@ class Bootiso():
 
         # uses the default configuration file
         lorax.configure()
-
+        
         #fire
         lorax.run(yb, self.product, self.version, self.release, None, None, False, tempdir, self.outputdir, self.arch, None, False)
