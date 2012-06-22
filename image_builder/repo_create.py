@@ -27,13 +27,13 @@ import subprocess
 class RepoCreate(object):
     """ Create side repository with additional packages """
 
-    def __init__(self, repodir,arch):
+    def __init__(self, repodir, arch):
         self.repodir = repodir
         self.arch = arch
-        self.koji_connection = self.get_koji_connection()
         self.kojiurl = 'http://koji.fedoraproject.org/kojihub'
         self.pkgurl = 'http://koji.fedoraproject.org/packages'
-
+        self.koji_connection = self.get_koji_connection()
+        
     def get_koji_connection(self):
         """ Return a Connection to Koji hub """
         return koji.ClientSession(self.kojiurl)
