@@ -34,33 +34,42 @@ from fabric.operations import put
 
 import ConfigParser
 import os
+import sys
 
 # config file
 deploy_conf = 'conf/deploy.conf'
 
-#workers
+# workers
 workers = []
 
 # Read configuration
 config = ConfigParser.SafeConfigParser()
-config.read(deploy_conf)
+try:
+    config.read(deploy_conf)
+except ConfigParser.ParsingError:
+    print 'Error parsing {0:s}'.format(deploy_conf)
+    sys.exit(1)
 
 # Read broker config
-i686_broker  =  config.get('broker','i686')
-x86_64_broker  =  config.get('broker','x86_64')
+try:
+    i686_broker = config.get('broker','i686')
+    x86_64_broker = config.get('broker','x86_64')
 
-# Read master config
-master = config.get('master','host')
-master_workdir = config.get('master','workdir')
+    # Read master config
+    master = config.get('master','host')
+    master_workdir = config.get('master','workdir')
 
-# Read worker config
-workers_i686 = config.get('workers','i686')
-workers_i686 = workers_i686.split(';')
-workers_x86_64 = config.get('workers','x86_64')
-workers_x86_64 = workers_x86_64.split(';')
-worker_workdir = config.get('workers','workdir')
-workers.extend(workers_i686)
-workers.extend(workers_x86_64)
+    # Read worker config
+    workers_i686 = config.get('workers','i686')
+    workers_i686 = workers_i686.split(';')
+    workers_x86_64 = config.get('workers','x86_64')
+    workers_x86_64 = workers_x86_64.split(';')
+    worker_workdir = config.get('workers','workdir')
+    workers.extend(workers_i686)
+    workers.extend(workers_x86_64)
+except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
+    print 'One or more of the required sections/options missing in conf/deploy.conf'
+    sys.exit(1)
 
 # Setup nodes.conf in webapp/
 with open('webapp/nodes.conf','w') as f:
@@ -91,11 +100,9 @@ with open('conf/zdaemon_master.conf','w') as f:
 
 # setup zdaemon_celeryd.conf for celeryd
 with open('conf/zdaemon_worker.conf','w') as f:
-    import time
     f.write('<runner>\n')
-    logfile = '{0:s}/celery_{1:s}.log'.format(worker_workdir,(str
-                                     (time.time()).split('.')[0]))
-    f.write('program /usr/bin/celeryd --loglevel=INFO --logfile={0:s}\n'.format(logfile))
+    logfile = '{0:s}/celery_task.log'.format(worker_workdir)
+    f.write('program /usr/bin/celeryd --events --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
     f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
@@ -192,3 +199,4 @@ def deploy_workers():
         run('python setup.py install')
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
+        run('celerymon --detach')
