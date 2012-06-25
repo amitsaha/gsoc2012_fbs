@@ -1,13 +1,14 @@
 	                	    Deploying the Image builder Service
 				       Version 0.1 - June 14, 2012
-				  Version 0.1 (Modified) - June 17, 2012
+				     Version 0.1 (Modified) - June 17, 2012
+				     Version 0.1 (Modified) - June 25, 2012
        				       	       DRAFT
 
 
 Get the sources: $ git clone git://github.com/amitsaha/gsoc2012_fbs.git
 
 Navigate to gsoc2012_fbs, and setup conf/deploy.conf with the
-following information:
+following information (change the broker URL's as appropriate):
 
 [broker]
 i686="amqp://guest@localhost//"
@@ -64,20 +65,31 @@ Available commands:
     deploy_workers            Deploy the workers. Basically start celeryd
     install_packages_master   Install dependencies on the 'master' where the
     install_packages_workers  Install dependencies on the workers
+    setup_cli                 Setup for using the CLI
+
+Command line Client
+-------------------
+
+To use the command line client, deploy the workers and setup nodes.conf using the 
+deployment script: 
+
+$ fab -f /path/to/deploy.py setup_cli install_packages_worker copy_files_worker 
+deploy_workers 
+
+Setup /etc/imagebuild/imagebuild.conf (see conf/sample_imagebuild.conf) for a sample
+and copy the kicksart file, if any to /etc/imagebuild/. Then go to cli/ and execute the
+build_cli.py script:
+
+$ python build_cli.py 
 
 
-If you are setting up image_builder for the first time, you should run
-all the tasks (in order specified), like so:
+Using the Web Interface
+---------------------
 
 $ fab -f /path/to/deploy.py
 install_packages_worker install_packages_master copy_files_master copy_files_worker deploy_webapp deploy_workers
 
-in a single command. You may also run each task separately. You will
-need to enter the appropriate password a number of times. So if you
-want to avoid this, you may want to set up a passwordless
-authentication between this system and the others.
+Once this is completed, the build service should be accessible from http://<master>:5000/build
 
-Once this is completed, the build service should be accessible from
-http://<master>:5000/build. If you specify a correct FTP host (setup
-with anonymous login), you should have the image ready in sometime
-depending on which image you build.
+Currently, it is not possible to monitor the progress of the build. An email notification system
+will soon be made possible which will notify you once the image is ready.

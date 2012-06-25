@@ -29,7 +29,7 @@ but to use it with Fabric involves a little convolution. Doable.
 Will do.
 """
 
-from fabric.api import task, run, hosts, cd, env
+from fabric.api import task, run, hosts, cd, env, local
 from fabric.operations import put
 
 import ConfigParser
@@ -78,6 +78,12 @@ with open('webapp/nodes.conf','w') as f:
     f.write('[x86_64]\n')
     f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
+# Setup nodes.conf in cli/
+with open('cli/nodes.conf','w') as f:
+    f.write('[i686]\n')
+    f.write('broker_url = {0:s}\n'.format(i686_broker))
+    f.write('[x86_64]\n')
+    f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
 # setup conf/celeryconfig_i686.py for workers
 # setup conf/celeryconfig_x86_64.py for workers
@@ -200,3 +206,10 @@ def deploy_workers():
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
         run('celerymon --detach')
+
+@task
+def setup_cli():
+    """ Setup for using the CLI """
+    deps = 'python-celery python-amqplib rabbitmq-server'
+    local('sudo yum --assumeyes install {0:s}'.format(deps)) 
+    local('sudo python setup.py install')
