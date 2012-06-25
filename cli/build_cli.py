@@ -30,7 +30,7 @@ import ConfigParser
 import os
 import sys
 
-CONFIG_FILE = '/etc/imagebuild/imagebuild.conf'
+CONFIG_FILE = 'sample_imagebuild.conf'
 
 def build_cli():
     config = ConfigParser.SafeConfigParser()
@@ -51,15 +51,15 @@ def build_cli():
     config = ConfigParser.RawConfigParser()
     config.read(CONFIG_FILE)
     if config.has_section('dvd'):
-        head,ks_fname = os.path.split(config.get('dvd','config'))
+        head, ks_fname = os.path.split(config.get('dvd','config'))
     else:
         if config.has_section('live'):
-            head,ks_fname = os.path.split(config.get('live','config'))
+            head, ks_fname = os.path.split(config.get('live','config'))
         else:
             ks_fname = None
 
     if ks_fname:
-        ks = open('/etc/imagebuild/{0:s}'.format(ks_fname))
+        ks = open(ks_fname)
         ksstr = json.dumps(ks.read())
         ks.close()
 

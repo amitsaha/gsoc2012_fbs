@@ -76,12 +76,10 @@ deployment script:
 $ fab -f /path/to/deploy.py setup_cli install_packages_worker copy_files_worker 
 deploy_workers 
 
-Setup /etc/imagebuild/imagebuild.conf (see conf/sample_imagebuild.conf) for a sample
-and copy the kicksart file, if any to /etc/imagebuild/. Then go to cli/ and execute the
-build_cli.py script:
+In the 'cli' directory, setup imagebuild.conf (sample_imagebuild.conf) for a sample
+and copy a ksflattened KS file if any. Then execute the build_cli.py script:
 
 $ python build_cli.py 
-
 
 Using the Web Interface
 ---------------------
