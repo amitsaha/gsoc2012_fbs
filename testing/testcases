@@ -1,0 +1,48 @@
+Unit tests
+-----------
+
+image_builder:
+
+ __init__.py:
+
+1. Succesfully read the config file (Mock different types of image config files). Valid
+   file object returned.
+2. Check whether it succesfully reads the ISO type 
+3. Calls the appropriate method from worker (use mocks to create worker objects; method)
+   
+
+worker.py:
+
+1. Mock different types of image config files and sees whether the individual functionalities
+   are called in the right order or not - example, given NVR and BuildIDs, it should proceed
+   to download those and then call prep_siderepo() and in some cases add the corresponding
+   KS to the exsiting KS file
+2. Depending on the image config, call the appropriate build method
+
+webapp:
+
+1. parse_data is called on form submission
+2. then calls the task delegation method
+
+Functional Tests
+----------------
+
+Deployment:
+
+1. Test case should check whether its able to read the deployment configuration properly 
+and setup hosts
+2. Test case should test installation of image_builder module
+
+Web application:
+
+1. Creation of nodes.conf, imagebuild.conf file, save/create KS file, test task delegation
+(can use Flask + Twill (http://twill.idyll.org/examples.html). 
+2. Server started correctly
+
+
+Image Builder:
+
+1. Connect to Koji and download packages : valid connection object returned
+2. Create a side repo and return a valid side repo URL
+3. Whether its able to initiate the image building process, for the different image 
+   creation cases: boot/dvd/live for i686/x86_64
