@@ -27,5 +27,8 @@ def build(config,kickstart=[]):
         with open('/etc/imagebuild/{0:s}'.format(fname),'w') as f:
             f.write(ks)
 
-    import image_builder
+    from image_builder.imagebuilder import ImageBuilder
+    build = ImageBuilder()
+    build.build()
+
     return

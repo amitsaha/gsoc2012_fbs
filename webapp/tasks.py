@@ -1,6 +1,5 @@
 import subprocess
 from celery.task import task
-from imagebuild import ImageBuild
 import json
 import os
 import shutil
@@ -29,5 +28,8 @@ def build(config,kickstart=[]):
         with open('/etc/imagebuild/{0:s}'.format(fname),'w') as f:
             f.write(ks)
 
-    imagebuild = ImageBuild('/etc/imagebuild/imagebuild.conf')
+    from image_builder.imagebuilder import ImageBuilder
+    build = ImageBuilder()
+    build.build()
+
     return
