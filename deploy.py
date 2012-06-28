@@ -217,7 +217,7 @@ def setup_cli():
 @task
 def run_tests():
     """ Run tests in testing/ """
-    deps = 'pytest'
+    deps = 'pytest python-mock'
     run('sudo yum --assumeyes install {0:s}'.format(deps)) 
     run('sudo python setup.py install')
     run('py.test')    
