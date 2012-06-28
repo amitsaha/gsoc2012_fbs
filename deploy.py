@@ -213,3 +213,9 @@ def setup_cli():
     deps = 'python-celery python-amqplib rabbitmq-server'
     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
     local('sudo python setup.py install')
+
+@task
+def run_tests():
+    """ Run tests in testing/ """
+    local('sudo python setup.py install')
+    local('py.test')    
