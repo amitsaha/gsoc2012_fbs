@@ -217,5 +217,7 @@ def setup_cli():
 @task
 def run_tests():
     """ Run tests in testing/ """
-    local('sudo python setup.py install')
-    local('py.test')    
+    deps = 'pytest'
+    run('sudo yum --assumeyes install {0:s}'.format(deps)) 
+    run('sudo python setup.py install')
+    run('py.test')    
