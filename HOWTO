@@ -81,13 +81,14 @@ and copy a ksflattened KS file, if any. Then execute the build_cli.py script:
 
 $ python build_cli.py 
 
-Using the Web Interface
----------------------
+Using the Web Interface/REST API
+--------------------------------
 
 $ fab -f /path/to/deploy.py
 install_packages_worker install_packages_master copy_files_master copy_files_worker deploy_webapp deploy_workers
 
-Once this is completed, the build service should be accessible from http://<master>:5000/build
+Once this is completed, the build service should be accessible from http://<master>:5000/build.
+You may also use the REST API at http://<master>:5000/rest. See cli/build_rest.py for an example.
 
 Currently, it is not possible to monitor the progress of the build. An email notification system
 will soon be made possible which will notify you once the image is ready.
