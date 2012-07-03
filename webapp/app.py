@@ -283,6 +283,7 @@ def delegate():
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'data/kickstarts/'
 
+# Entry point for the Web application
 @app.route('/build', methods=['GET', 'POST'])
 def register():
     form = BuildConfigForm(request.form)
@@ -298,20 +299,56 @@ def register():
 
     return render_template('ui.html', form=form)
 
+# Restful Interface
+@app.route("/rest", methods=['GET','POST'])
+def rest():
+    import json
+    if request.method == 'POST':
+        if request.headers['Content-Type'] == 'application/json':
+            # Create data/imagebuild.conf and KS file, if applicable
+            # from the Request 
+            configstr = json.loads(request.json['config'])
+            with open('data/config/imagebuild.conf','w') as f:
+                f.write(configstr)
+
+            ksfname = json.loads(json.dumps(request.json['ksfname']))
+
+            if ksfname:
+                ksstr = json.loads(request.json['ks'])
+                with open('data/kickstarts/{0:s}'.format(ksfname),'w') as f:
+                    f.write(ksstr)
+
+        #Fire the build job in a separate process
+            buildjob=Process(target=delegate)
+            buildjob.start()
+    
+            return json.dumps('Request Registered. You will recieve an email notification once your job is complete, or could not be completed.')
+        else:
+            return json.dumps('Request must be passed as a JSON encoded string')
+
+    if request.method == 'GET':
+        return "<p>Rest API to On-Demand Fedora Build Service</p>"
+
+
 @app.route("/")
 def index():
     return "<center><h2>On-Demand Fedora Build Service</h2></center>"
 
 
 if __name__ == "__main__":
-
     # cleanup data to start with and
     # create data/config and data/kickstarts
-    # if not os.path.exists('data/config'):
-    #     os.makedirs('/etc/imagebuild')
-    # else:
-    #     shutil.rmtree('data/config')
-    #     os.makedirs('data/imagebuild')
+    if not os.path.exists('data/config'):
+        os.makedirs('data/config')
+    else:
+        shutil.rmtree('data/config')
+        os.makedirs('data/config')
+
+    if not os.path.exists('data/kickstarts'):
+        os.makedirs('data/kickstarts')
+    else:
+        shutil.rmtree('data/kickstarts')
+        os.makedirs('data/kickstarts')
 
     # start webapp
     app.run(host='0.0.0.0',debug=True)
