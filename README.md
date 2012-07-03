@@ -6,17 +6,19 @@ Projet details: [On-Demand Fedora Build Service](http://www.google-melange.com/g
 STATUS
 ------
 
-+ Web based and command line client for build job submission
++ Web Forms, REST API and Command Line interface for build job submission
 + Can use multiple worker nodes to build images
 + Copies the image(s) to the designated FTP location specified in staging.
 
 TODO
 ----
+
 + Unit tests
-+ Test building x86_64 images
++ Book-keeping of Jobs submitted/processed/running/finished
 + Implement error handling on the client UI
++ Validating the imagebuild.conf syntax/semantics for the CLI interfaces
++ Test building x86_64 images
 + Email notification
-+ Enhanced UI (dynamic forms?)
 + Need to think more on how the images will be stored and ability to identify
   an existing image uniquely. Timestamp?
-+ Implement a RESTful API to the build service
++ Enhanced UI (dynamic forms/CSS/etc)
