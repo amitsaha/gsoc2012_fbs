@@ -14,11 +14,16 @@ TODO
 ----
 
 + Unit tests
-+ Book-keeping of Jobs submitted/processed/running/finished
-+ Implement error handling on the client UI
++ Monitoring/Book-keeping of Jobs submitted/processed/running/finished
 + Validating the imagebuild.conf syntax/semantics for the CLI interfaces
 + Test building x86_64 images
 + Email notification
 + Need to think more on how the images will be stored and ability to identify
-  an existing image uniquely. Timestamp?
+  an existing image uniquely. email_timestamp?
+
+GOOD-TO-HAVE
+-----------
+
++ User sessions
 + Enhanced UI (dynamic forms/CSS/etc)
++ Implement error handling on the client UI (Available; but server side for now)
