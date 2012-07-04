@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+
+    <title>On-Demand Fedora Build Service: Google Summer of Code' 2012 by amitsaha</title>
+  </head>
+
+  <body>
+
+    <header>
+      <div class="container">
+        <h1>On-Demand Fedora Build Service: Google Summer of Code' 2012</h1>
+        <h2>Minimize Command Line Wrangling</h2>
+
+        <section id="downloads">
+          <a href="https://github.com/amitsaha/gsoc2012_fbs/zipball/master" class="btn">Download as .zip</a>
+          <a href="https://github.com/amitsaha/gsoc2012_fbs/tarball/master" class="btn">Download as .tar.gz</a>
+          <a href="https://github.com/amitsaha/gsoc2012_fbs" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
+        </section>
+      </div>
+    </header>
+
+    <div class="container">
+      <section id="main_content">
+        <h1>gsoc2012_fbs</h1>
+
+<p>What do we have here? <a href="http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001">On-Demand Fedora Build Service</a>. See <a href="https://github.com/amitsaha/gsoc2012_fbs/blob/master/HOWTO">HOWTO</a> for some draft usage instructions.</p>
+
+<h2>STATUS</h2>
+
+<ul>
+<li>Web Forms, REST API and Command Line interface for build job submission</li>
+<li>Can use multiple worker nodes to build images</li>
+<li>Copies the image(s) to the designated FTP location specified in staging.</li>
+</ul><h2>TODO</h2>
+
+<ul>
+<li>Unit tests</li>
+<li>Monitoring/Book-keeping of Jobs submitted/processed/running/finished</li>
+<li>Validating the imagebuild.conf syntax/semantics for the CLI interfaces</li>
+<li>Test building x86_64 images</li>
+<li>Email notification</li>
+<li>Need to think more on how the images will be stored and ability to identify
+an existing image uniquely. email_timestamp?</li>
+</ul><h2>GOOD-TO-HAVE</h2>
+
+<ul>
+<li>User sessions</li>
+<li>Enhanced UI (dynamic forms/CSS/etc)</li>
+<li>Implement error handling on the client UI (Available; but server side for now)</li>
+</ul>
+      </section>
+    </div>
+
+    
+  </body>
+</html>
