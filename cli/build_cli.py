@@ -30,7 +30,7 @@ import ConfigParser
 import os
 import sys
 
-CONFIG_FILE = 'sample_imagebuild.conf'
+CONFIG_FILE = 'imagebuild.conf'
 
 def build_cli():
     config = ConfigParser.SafeConfigParser()
@@ -50,26 +50,34 @@ def build_cli():
     buildconf.close()
     config = ConfigParser.RawConfigParser()
     config.read(CONFIG_FILE)
+
     if config.has_section('dvd'):
-        head, ks_fname = os.path.split(config.get('dvd','config'))
+        ks = config.get('dvd','config')
     else:
         if config.has_section('live'):
-            head, ks_fname = os.path.split(config.get('live','config'))
+            ks = config.get('live','config')
         else:
-            ks_fname = None
+            ks = None
 
-    if ks_fname:
-        ks = open(ks_fname)
-        ksstr = json.dumps(ks.read())
-        ks.close()
+    if ks:
+        # if its a remote KS file
+        if ks.startswith(('http','ftp')):
+            # download and then JSON dump
+            import urllib2
+            ksstr = json.dumps(urllib2.urlopen(ks).read())
+            head, ks_fname = os.path.split(ks)
+        else:
+            with open(ks) as ks_fp:
+                ksstr = json.dumps(ks_fp.read())
+            head, ks_fname = os.path.split(ks)
 
-    if ks_fname:
-        build.apply_async(args=[buildconf_str, [ks_fname, ksstr]], serializer="json")
+        #send task to celery woker(s)
+        build.apply_async(args=[buildconf_str,[ks_fname,ksstr]],serializer="json")
     else:
-        build.apply_async(args=[buildconf_str,None], serializer="json")
+        build.apply_async(args=[buildconf_str,None],serializer="json")
 
     print 'Build task submitted'
-        
+    
     return
 
 if __name__ == '__main__':

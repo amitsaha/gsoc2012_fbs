@@ -30,16 +30,17 @@ import ConfigParser
 import subprocess
 
 class BuildConfigForm(Form):
+
     image=SelectField(u'Image Type', choices=[('boot', 'boot'), \
                         ('dvd', 'DVD'), ('live', 'Live Image')])
     arch=SelectField(u'Architecture', choices=[('i686', 'i686'), \
                         ('x86_64', 'x86_64')])
-    staging=TextField(u'Staging FTP URL (No ftp://)')
-    email = TextField('Email Address', [validators.Length(min=6, max=35)])
+    staging=TextField(u'Staging FTP URL (No ftp://)', [validators.required()])
+    email = TextField('Email Address', [validators.Email()])
     product=SelectField(u'Product',choices=[('fedora','Fedora')])
     release=SelectField(u'Release',choices=[('17','17'),('18','18'),('rawhide','rawhide')])
     version=SelectField(u'Version',choices=[('17','17'),('18','18'),('rawhide','rawhide')])
-    baseurl = TextField(u'Base URL of the repository')
+    baseurl = TextField(u'Base URL of the repository',[validators.required()])
     proxy = TextField(u'Proxy URL')
     gold = BooleanField(u'Gold?')
     updates=BooleanField(u'Enable updates?')
@@ -48,17 +49,44 @@ class BuildConfigForm(Form):
     bid_boot=TextField('BuildIDs of extra packages (Multiple separate by ;)')
     nvr_dvd=TextField('NVR of extra packages(Multiple separate by ;)')
     bid_dvd=TextField('BuildIDs of extra packages(Multiple separate by ;)')
-    flavor=TextField(u'Flavor')
+    flavor=TextField(u'Flavor',[validators.Required()])
     config_dvd=FileField('Kickstart file')
-    remoteconfig_dvd=TextField(u'Kickstart file URL')
+    remoteconfig_dvd=TextField(u'Kickstart file URL (http/ftp)', [validators.Required()])
     config_live=FileField('Kickstart file')
-    remoteconfig_live=TextField(u'Kickstart file URL')
+    remoteconfig_live=TextField(u'Kickstart file URL (http/ftp)', [validators.Required()])
     nvr_live=TextField('NVR of extra packages(Multiple separate by ;)')
     bid_live=TextField('BuildIDs of extra packages (Multiple separate by ;)')
-    label=TextField(u'Label')
-    title=TextField(u'Title')
+    label=TextField(u'Label',[validators.Required()])
+    title=TextField(u'Title',[validators.Required()])
 
+    @classmethod
+    def pre_validate(self,form,request):
+        if form.image.data == 'boot':
+            form.config_dvd.validators = []
+            form.remoteconfig_dvd.validators = []
+            form.config_live.validators = []
+            form.remoteconfig_live.validators = []
+        
+        if form.image.data == 'live':
+            if request.files['config_live']:
+                form.remoteconfig_live.validators = []
+            form.remoteconfig_dvd.validators = []
 
+        if form.image.data == 'dvd':
+            if request.files['config_dvd']:
+                form.remoteconfig_dvd.validators = []
+            form.remoteconfig_live.validators = []
+
+        if form.image.data == 'boot' or form.image.data == 'live':
+            form.flavor.validators = []
+
+        if form.image.data == 'boot' or form.image.data == 'dvd':
+            form.title.validators = []
+            form.label.validators = []
+        
+        if form.image.data == 'dvd' or form.image.data == 'live':
+            form.baseurl.validators = []
+            
 def parse_data(request,form):
     
     # config file creation
@@ -73,7 +101,6 @@ def parse_data(request,form):
         f.write('staging={0:s}\n'.format(staging))
         email=form.email.data
         f.write('email={0:s}\n'.format(email))
-        
 
         if image == 'boot':
             f.write('[boot]\n')
@@ -102,20 +129,17 @@ def parse_data(request,form):
 
             # form the repository URL's
             if gold:
-                main_url='{0:s}/releases/{1:s}/Everything/{2:s}/os'.format(baseurl,release,arch)
+                main_url = '{0:s}/releases/{1:s}/Everything/{2:s}/os'.format(baseurl, release, arch)
             else:
-                main_url='{0:s}/development/{1:s}/{2:s}/os}'.format(baseurl,release,arch)
+                main_url = '{0:s}/development/{1:s}/{2:s}/os'.format(baseurl, release, arch)
 
             updates_url='{0:s}/updates/{1:s}/{2:s}'.format(baseurl,release,arch)
             updates_testing_url='{0:s}/updates/testing/{1:s}/{2:s}'.format(baseurl,release,arch)
 
-
-            
             #form the mirror url's
             mirror_main_url = 'https://mirrors.fedoraproject.org/metalink?repo=fedora-{0:s}&arch={1:s}'.format(release,arch)
             mirror_updates_url = 'https://mirrors.fedoraproject.org/metalink?repo=updates-released-f{0:s}&arch={1:s}'.format(release,arch)   
             mirror_updates_testing_url = 'https://mirrors.fedoraproject.org/metalink?repo=updates-testing-f{0:s}&arch={1:s}'.format(release,arch)   
-
 
             #write the URLs
             f.write('{0:s}_url={1:s}\n'.format(release,main_url))
@@ -126,7 +150,6 @@ def parse_data(request,form):
             if updates_testing=='1':
                 f.write('{0:s}-updates-testing_url={1:s}\n'.format(release,updates_testing_url))
                 f.write('{0:s}-updates-testing_mirror={1:s}\n'.format(release,mirror_updates_testing_url))
-            
 
             proxy=form.proxy.data
             f.write('proxy={0:s}\n'.format(proxy))
@@ -143,7 +166,7 @@ def parse_data(request,form):
             workdir='/tmp/lorax_work'
             f.write('outdir={0:s}\n'.format(outdir))                     
             f.write('workdir={0:s}\n'.format(workdir))                     
-        
+            
         if image=='dvd':
 
             f.write('[dvd]\n')
@@ -179,14 +202,18 @@ def parse_data(request,form):
             f.write('sourceisos={0:s}\n'.format(sourceisos))                     
             f.write('force={0:s}\n'.format(force))                     
             f.write('stage={0:s}\n'.format(stage))                     
-            
+
+            # If KS uploaded
             file = request.files['config_dvd']
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
-            f.write('config=/etc/imagebuild/{0:s}\n'.format(filename))
-
-
+            if file:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                f.write('config=/etc/imagebuild/{0:s}\n'.format(filename))
+            else:
+                # If KS URL specified
+                ksurl = form.remoteconfig_dvd.data
+                f.write('config={0:s}\n'.format(ksurl))          
+                
         if image=='live':
 
             f.write('[live]\n')
@@ -216,12 +243,16 @@ def parse_data(request,form):
             f.write('logfile={0:s}\n'.format(logfile))                     
             
             file = request.files['config_live']
-            filename = secure_filename(file.filename)
-            print os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            # If KS uploaded
+            if file:
+                filename = secure_filename(file.filename)
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                f.write('config=/etc/imagebuild/{0:s}\n'.format(filename))
 
-            f.write('config=/etc/imagebuild/{0:s}\n'.format(filename))
-
+            # If KS URL specified
+            else:
+                ksurl = form.remoteconfig_live.data
+                f.write('config={0:s}\n'.format(ksurl))          
     
     return
 
@@ -258,17 +289,29 @@ def delegate():
     config = ConfigParser.RawConfigParser()
     config.read('data/config/imagebuild.conf')
     if config.has_section('dvd'):
-        head,ks_fname = os.path.split(config.get('dvd','config'))
+        if not config.get('dvd','config').startswith(('http','ftp')):
+            head, ks_fname = os.path.split(config.get('dvd','config'))
+        else:
+            ks_fname = config.get('dvd','config')
     else:
         if config.has_section('live'):
-            head,ks_fname = os.path.split(config.get('live','config'))
+            if not config.get('live','config').startswith(('http','ftp')):
+                head, ks_fname = os.path.split(config.get('live','config'))
+            else:
+                ks_fname = config.get('live','config')
         else:
             ks_fname = None
 
     if ks_fname:
-        ks=open('data/kickstarts/{0:s}'.format(ks_fname))
-        ksstr=json.dumps(ks.read())
-        ks.close()
+        # if its a remote KS file
+        if ks_fname.startswith(('http','ftp')):
+            # download and then JSON dump
+            import urllib2
+            ksstr = json.dumps(urllib2.urlopen(ks_fname).read())
+        else:
+            ks = open('data/kickstarts/{0:s}'.format(ks_fname))
+            ksstr = json.dumps(ks.read())
+            ks.close()
 
     #send task to celery woker(s)
     if ks_fname:
@@ -287,15 +330,16 @@ app.config['UPLOAD_FOLDER'] = 'data/kickstarts/'
 @app.route('/build', methods=['GET', 'POST'])
 def register():
     form = BuildConfigForm(request.form)
-    if request.method == 'POST' and form.validate():
-        # create configuration files from the form submitted
-        parse_data(request,form)
+    if request.method == 'POST':
+        BuildConfigForm.pre_validate(form, request)
 
-        #Fire the build job in a separate process
-        buildjob=Process(target=delegate)
-        buildjob.start()
+        if form.validate():
+            parse_data(request,form)
+            #Fire the build job in a separate process
+            buildjob=Process(target=delegate)
+            buildjob.start()
 
-        return 'Request Registered. You will recieve an email notification once your job is complete, or could not be completed. Go <a href="/build">Home</a>.'
+            return 'Request Registered. You will recieve an email notification once your job is complete, or could not be completed. Go <a href="/build">Home</a>.'
 
     return render_template('ui.html', form=form)
 
@@ -312,11 +356,11 @@ def rest():
                 f.write(configstr)
 
             ksfname = json.loads(json.dumps(request.json['ksfname']))
-
             if ksfname:
-                ksstr = json.loads(request.json['ks'])
-                with open('data/kickstarts/{0:s}'.format(ksfname),'w') as f:
-                    f.write(ksstr)
+                if not ksfname.startswith(('http','ftp')):
+                    ksstr = json.loads(request.json['ks'])
+                    with open('data/kickstarts/{0:s}'.format(ksfname),'w') as f:
+                        f.write(ksstr)
 
         #Fire the build job in a separate process
             buildjob=Process(target=delegate)

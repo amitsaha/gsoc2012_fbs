@@ -32,7 +32,7 @@ import json
 import os
 
 # Set these appropriately
-CONFIG_FILE = 'imagebuild.conf'
+CONFIG_FILE = 'imagebuild_boot.conf'
 API_URL = 'http://127.0.0.1:5000/rest'
 
 def build_rest():
@@ -44,17 +44,23 @@ def build_rest():
     config = ConfigParser.RawConfigParser()
     config.read(CONFIG_FILE)
     if config.has_section('dvd'):
-        head, ks_fname = os.path.split(config.get('dvd','config'))
+        ks = config.get('dvd','config')
     else:
         if config.has_section('live'):
-            head, ks_fname = os.path.split(config.get('live','config'))
+            ks = config.get('live','config')
         else:
+            ks = None
             ks_fname = None
+            ksstr = None
 
-    if ks_fname:
-        ks = open(ks_fname)
-        ksstr = json.dumps(ks.read())
-        ks.close()
+    if ks:
+        if not ks.startswith(('http','ftp')):
+            with open(ks) as ks_fp:
+                ksstr = json.dumps(ks_fp.read())
+            head, ks_fname = os.path.split(ks)
+        else:
+            ks_fname = ks
+            ksstr = []
 
     # build and send POST request (as JSON)
     headers = {'Content-Type': 'application/json'}
