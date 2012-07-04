@@ -376,7 +376,7 @@ def rest():
 
 @app.route("/")
 def index():
-    return "<center><h2>On-Demand Fedora Build Service</h2></center>"
+    return "<center><h2>On-Demand Fedora Build Service</h2><p>Go to the <a href='/build'>Web Interface</a> or browse the code on <a href='https://github.com/amitsaha/gsoc2012_fbs'>GitHub</a></a></center>"
 
 
 if __name__ == "__main__":
