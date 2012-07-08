@@ -43,9 +43,11 @@ class Worker():
 
         self.buildconfig = buildconfig
         self.kojihub_url = 'http://koji.fedoraproject.org/kojihub'
-        self.conn = koji.ClientSession(self.kojihub_url)
-
-        return
+        self.koji_conn = self.get_koji_connection()
+        
+    def get_koji_connection(self):
+        """ Return a Connection to Koji hub """
+        return koji.ClientSession(self.kojihub_url)
 
     def add_repo(self, ksfile, siderepo):
         """ Add a repository to an existing KS file """
@@ -68,16 +70,38 @@ class Worker():
 
     def get_nvr(self, bids):
         """ get NVR given build ID """
-
         nvr = []
+        
         for bid in bids:
             # get the build information for this bid
-            build = self.conn.getBuild(int(bid))
+            build = self.koji_conn.getBuild(int(bid))
             # NVR
             package = build['nvr']
             nvr.append(package)
-    
+        
         return nvr
+
+    def get_rpms_nvr(self, nvr, bid):
+        ''' Take the NVRs and BIDs and return the list
+        of all NVR's
+
+        '''
+        rpms_nvr = []
+        arch = self.buildconfig['default']['arch']
+
+        if nvr:
+            for rpm in nvr.split(';'):
+                rpms_nvr.append(rpm)
+
+        bids = []        
+        if bid:
+            for rpm in bid.split(';'):
+                bids.append(rpm)
+            
+            rpms_bid = self.get_nvr(bids)
+            rpms_nvr.extend(rpms_bid)
+
+        return rpms_nvr
 
     def prep_siderepo(self, workdir, packages, arch):
         """ prepare a side repository given extra packages """
@@ -135,22 +159,8 @@ class Worker():
         nvr = self.buildconfig['boot']['nvr']
         bid = self.buildconfig['boot']['bid']
 
-        rpms_nvr = []
-        if nvr:
-            for rpm in nvr.split(';'):
-                rpms_nvr.append(rpm)
-
-        bids = []        
-        if bid:
-            for rpm in bid.split(';'):
-                bids.extend(str(rpm))
-            
-            rpms_bid = self.get_nvr(bids, arch)
-            rpms_nvr.extend(rpms_bid)
-    
         # prepare side repository
-        rpms = rpms_nvr
-
+        rpms = self.get_rpms_nvr(nvr, bid)
         if rpms:
             siderepo = self.prep_siderepo(workdir, rpms, arch)
             repos.append(siderepo)
@@ -225,23 +235,9 @@ class Worker():
 
         arch = self.buildconfig['default']['arch']
         workdir = self.buildconfig['dvd']['workdir']
-    
-        rpms_nvr = []
-        if nvr:
-            for rpm in nvr.split(';'):
-                rpms_nvr.append(rpm)
 
-        bids = []
-        if bid:
-            for rpm in bid.split(';'):
-                bids.extend(str(rpm))
-    
-            if bids:
-                rpms_bid = self.get_nvr(bids, arch)
-                rpms_nvr.extend(rpms_bid)
-    
         # prepare side repository
-        rpms = rpms_nvr
+        rpms = get_rpms_nvr(nvr, bid)
         if rpms:
             siderepo = self.prep_siderepo(workdir, rpms, arch)
             # Add side repo to the existing KS file
@@ -319,26 +315,11 @@ class Worker():
         nvr = self.buildconfig['live']['nvr']
         bid = self.buildconfig['live']['bid']
 
-        rpms_nvr = []
-        if nvr != '':
-            for rpm in nvr.split(';'):
-                rpms_nvr.append(rpm)
-
-        bids = []
-        if bid:
-            for rpm in bid.split(';'):
-                bids.extend(str(rpm))
-    
-        if bids:
-            rpms_bid = self.get_nvr(bids)
-            rpms_nvr.extend(rpms_bid)
-    
         # prepare side repository
-        rpms = rpms_nvr
-        arch = self.buildconfig['default']['arch']
-        tmpdir = self.buildconfig['live']['tmpdir']
-
+        rpms = get_rpms_nvr(nvr, bid)
+        
         if rpms:
+            tmpdir = self.buildconfig['live']['tmpdir']
             siderepo = self.prep_siderepo(tmpdir, rpms, arch)
             # Add side repo to the existing KS file
             self.add_repo(ksfname, siderepo)
