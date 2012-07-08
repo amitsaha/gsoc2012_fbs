@@ -41,25 +41,25 @@ class Bootiso():
         self.product = product
 
     def get_yum_base_object(self, installroot, repositories, mirrors, proxy, tempdir="/tmp"):
-        """ adapted from  
+        """ with help from  
         http://git.fedorahosted.org/git/?p=lorax.git;a=blob_plain;f=src/sbin/lorax;hb=HEAD
         """
         def sanitize_repo(repo):
             if repo.startswith("/"):
                 return "file://{0}".format(repo)
-            elif (repo.startswith("http://") or repo.startswith("ftp://")
-                  or repo.startswith("file://")):
+            elif (repo.startswith("http://") or repo.startswith("https://")
+                  or repo.startswith("ftp://") or repo.startswith("file://")):
                 return repo
             else:
                 return None
 
         # sanitize the repositories
         repositories = map(sanitize_repo, repositories)
-        #mirrors = map(sanitize_repo, mirrors)
+        mirrors = map(sanitize_repo, mirrors)
         
         # remove invalid repositories
         repositories = filter(bool, repositories)
-        #mirrors = filter(bool, mirrors)
+        mirrors = filter(bool, mirrors)
 
         cachedir = os.path.join(tempdir, "yum.cache")
         if not os.path.isdir(cachedir):

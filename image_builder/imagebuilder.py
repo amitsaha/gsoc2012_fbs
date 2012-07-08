@@ -19,7 +19,8 @@
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
-import ConfigParser
+import traceback
+import sys
 
 from image_builder.worker import Worker
 from image_builder.transfer import Transfer
@@ -29,29 +30,39 @@ from image_builder.transfer import Transfer
 class ImageBuilder:
     # Read Image Build configuration
 
-    def __init__(self):
-        self.build_config = '/etc/imagebuild/imagebuild.conf'
-        self.config = ConfigParser.SafeConfigParser()
-        self.config.read(self.build_config)
-        self.iso_type = self.config.get('DEFAULT', 'type')
-        self.staging = self.config.get('DEFAULT', 'staging')
-        self.email = self.config.get('DEFAULT', 'email')
+    def __init__(self, buildconfig, kickstart = None):
+        self.buildconfig = buildconfig
+        self.kickstart = kickstart
+        self.iso_type = self.buildconfig['default']['type']
+        self.staging = self.buildconfig['default']['staging']
+        self.email = self.buildconfig['default']['email']
 
     def build(self):
-        
+
         # Worker object
-        worker = Worker(self.build_config)
+        worker = Worker(self.buildconfig)
 
         # boot
         if self.iso_type == 'boot':
             self.imgloc = worker.build_bootiso()
+
         # DVD
         if self.iso_type == 'dvd':
-            self.imgloc = worker.build_dvd()
+            self.imgloc = worker.build_dvd(self.kickstart)
 
         #Live image
         if self.iso_type == 'live':
-            self.imgloc = worker.build_live()
+            self.imgloc = worker.build_live(self.kickstart)
 
-        t = Transfer(self.staging, self.imgloc)
-        t.transfer_ftp()
+        #transfer
+        if self.imgloc:    
+            t = Transfer(self.staging, self.imgloc)
+            try:
+                t.transfer_ftp()
+            except Exception as e:
+                print traceback.format_exception(*sys.exc_info())
+                return -1
+            else:
+                return 0
+        else:
+            return -1

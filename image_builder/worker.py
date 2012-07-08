@@ -19,12 +19,14 @@
 # Contact: Amit Saha <amitksaha@fedoraproject.org>
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
-import ConfigParser
 import subprocess
 import koji
 import yum
 import sys
 import os
+import tempfile
+import traceback
+import json
 
 from pykickstart.parser import KickstartParser
 from pykickstart.version import makeVersion
@@ -39,10 +41,7 @@ class Worker():
 
     def __init__(self, buildconfig):
 
-        self.possible_arches = ['i686', 'x86_64']
-        self.possible_products = ['fedora']
-        self.possible_releases = ['17', '18','rawhide']
-        self.imageconfig = buildconfig
+        self.buildconfig = buildconfig
         self.kojihub_url = 'http://koji.fedoraproject.org/kojihub'
         self.conn = koji.ClientSession(self.kojihub_url)
 
@@ -50,7 +49,6 @@ class Worker():
 
     def add_repo(self, ksfile, siderepo):
         """ Add a repository to an existing KS file """
-
         # read
         ksparser = KickstartParser(makeVersion())
         ksparser.readKickstart(ksfile)
@@ -97,11 +95,9 @@ class Worker():
         """ Build repository list using data from the configuration
         file 
         """
-        config = ConfigParser.SafeConfigParser()
-        config.read(self.imageconfig)
         reponames = [ release ]
-        updates = config.get('boot', 'updates')
-        testing = config.get('boot', 'updates-testing')
+        updates = self.buildconfig['boot']['updates']
+        testing = self.buildconfig['boot']['updates-testing']
 
         if updates == '1':
             reponames.append('{0:s}-updates'.format(release))
@@ -112,48 +108,32 @@ class Worker():
         mirrors = []
         for name in reponames:
             # repos
-            repos.append(config.get('boot', '{0:s}_url'.format(name)))
+            repos.append(self.buildconfig['boot']['{0:s}_url'.format(name)])
             # mirrorlist
-            mirrors.append(config.get('boot', '{0:s}_mirror'.format(name)))
+            mirrors.append(self.buildconfig['boot']['{0:s}_mirror'.format(name)])
 
         return repos, mirrors
 
-    
     def build_bootiso(self):
         """ Build boot iso """
 
-        # Read pungi configuration
-        config = ConfigParser.SafeConfigParser()
-        config.read(self.imageconfig)
-
-        arch = config.get('DEFAULT', 'arch')
-        outdir = config.get('boot', 'outdir')
-        workdir = config.get('boot', 'workdir')
-        product = config.get('boot', 'product')
-        release = config.get('boot', 'release')
-        version = config.get('boot', 'version')
-        proxy = config.get('boot', 'proxy')
+        arch = self.buildconfig['default']['arch']
+        outdir = self.buildconfig['boot']['outdir']
+        workdir = self.buildconfig['boot']['workdir']
+        product = self.buildconfig['boot']['product']
+        release = self.buildconfig['boot']['release']
+        version = self.buildconfig['boot']['version']
+        proxy = self.buildconfig['boot']['proxy']
     
         if proxy == '':
             proxy = None
-
-        if not arch in self.possible_arches:
-            print "ISOs for arch {0:s} are not supported".format(arch)
-            sys.exit(1)
-
-        if not product in self.possible_products:
-            print "Product {0:s} is not supported".format(product)
-
-        if not release in self.possible_releases:
-            print "Release {0:s} is not supported".format(release)
-            sys.exit(1)
 
         # gather repos and mirrors
         repos, mirrors = self.gather_repos(release)
 
         # Create the side repository if needed
-        nvr = config.get('boot', 'nvr')
-        bid = config.get('boot', 'bid')
+        nvr = self.buildconfig['boot']['nvr']
+        bid = self.buildconfig['boot']['bid']
 
         rpms_nvr = []
         if nvr:
@@ -176,52 +156,53 @@ class Worker():
             repos.append(siderepo)
 
         boot_builder = Bootiso(arch, release, version, repos, mirrors, proxy, outdir, product)
-        boot_builder.make_iso()
 
-        # boot image location
-        imgloc = [os.path.abspath(outdir)+'/images/boot.iso']
+        try:
+            boot_builder.make_iso()
+        except Exception as e:
+            # do something with the exception message
+            # perhaps log it?
+            print traceback.format_exception(*sys.exc_info())
+            imgloc = None
+        else:
+            # boot image location
+            imgloc = [os.path.abspath(outdir)+'/images/boot.iso']
 
         return imgloc
     
-    def build_dvd(self):
+    def build_dvd(self, kickstart):
         """ Builds DVD image """
-
-        config = ConfigParser.SafeConfigParser()
-        config.read(self.imageconfig)
 
         args = []
 
-        name = config.get('dvd', 'name')    
-        args.extend(['--name', name])
-
-        ver = config.get('dvd', 'version')    
+        ver = self.buildconfig['dvd']['version']
         args.extend(['--ver', ver])
 
-        flavor = config.get('dvd', 'flavor')    
+        flavor = self.buildconfig['dvd']['flavor']
         args.extend(['--flavor', flavor])
 
-        destdir = config.get('dvd', 'destdir')    
+        destdir = self.buildconfig['dvd']['destdir']
         args.extend(['--destdir', destdir])
     
-        cachedir = config.get('dvd', 'cachedir')    
+        cachedir = self.buildconfig['dvd']['cachedir']
         args.extend(['--cachedir',  cachedir])
 
-        bugurl = config.get('dvd', 'bugurl') 
+        bugurl = self.buildconfig['dvd']['bugurl']
         args.extend(['--bugurl',  bugurl])
 
-        nosource = config.get('dvd', 'nosource')
+        nosource = self.buildconfig['dvd']['nosource']
         if nosource == '1':
             args.extend(['--nosource'])
     
-        sourceisos = config.get('dvd', 'sourceisos')
+        sourceisos = self.buildconfig['dvd']['sourceisos']
         if sourceisos == '1':
             args.extend(['--sourceisos'])
 
-        force = config.get('dvd','force')
+        force = self.buildconfig['dvd']['force']
         if force == '1':
             args.extend(['--force'])
 
-        stage = config.get('dvd', 'stage')
+        stage = self.buildconfig['dvd']['stage']
         allowed_stages = ['all', '-G', '-C', '-B', '-I']
 
         if stage in allowed_stages:
@@ -232,15 +213,18 @@ class Worker():
         else:
             print 'Invalid stage entered'
                         
-        ks = config.get('dvd', 'config')
-        args.extend(['-c', ks])
+        ksfname = tempfile.gettempdir() + '/' + 'dvd_kickstart.ks'
+        args.extend(['-c', ksfname])
+
+        with open(ksfname,'w') as fp:
+            fp.write(json.loads(kickstart))
 
         # Create the side repository if needed
-        nvr = config.get('dvd', 'nvr')
-        bid = config.get('dvd', 'bid')
+        nvr = self.buildconfig['dvd']['nvr']
+        bid = self.buildconfig['dvd']['bid']
 
-        arch = config.get('DEFAULT', 'arch')
-        workdir = config.get('dvd', 'workdir')
+        arch = self.buildconfig['default']['arch']
+        workdir = self.buildconfig['dvd']['workdir']
     
         rpms_nvr = []
         if nvr:
@@ -258,76 +242,82 @@ class Worker():
     
         # prepare side repository
         rpms = rpms_nvr
-        if len(rpms) > 0:
+        if rpms:
             siderepo = self.prep_siderepo(workdir, rpms, arch)
             # Add side repo to the existing KS file
-            self.add_repo(ks, siderepo)
+            self.add_repo(ksfname, siderepo)
     
         # fire pungi
         process_call = ['pungi']
         process_call.extend(args)
-        subprocess.call(process_call)
 
-        # DVD image and other files location
-        if arch == 'i686':
-            arch = 'i386'
+        try:
+            subprocess.call(process_call)
+        except Exception as e:
+            # do something with the exception message
+            # perhaps log it?
+            print traceback.format_exception(*sys.exc_info())
+            imgloc = None
+        else:
+            # DVD image and other files location
+            if arch == 'i686':
+                arch = 'i386'
 
-        # for DVD iso
-        imgloc = ['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-DVD.iso'.format(os.path.abspath(destdir), ver, flavor, arch, name)]
-        # for Netinstall ISO
-        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-netinst.iso'.format(os.path.abspath(destdir), ver, flavor, arch, name)])
-        # for checksum
-        imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-CHECKSUM'.format(os.path.abspath(destdir), ver, flavor, arch, name)])
+            # for DVD iso
+            imgloc = ['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-DVD.iso'.format(os.path.abspath(destdir), ver, flavor, arch, name)]
+            # for Netinstall ISO
+            imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-netinst.iso'.format(os.path.abspath(destdir), ver, flavor, arch, name)])
+            # for checksum
+            imgloc.extend(['{0:s}/{1:s}/{2:s}/{3:s}/iso/{4:s}-{1:s}-{3:s}-CHECKSUM'.format(os.path.abspath(destdir), ver, flavor, arch, name)])
 
         return imgloc
 
-    def build_live(self):
+    def build_live(self, kickstart):
         """ Live Image"""
 
         # Currently using livecd-creator
         # as the forward moving livemedia-creator is not yet
         # quite usable
 
-        # Read pungi configuration
-        config = ConfigParser.SafeConfigParser()
-        config.read(self.imageconfig)
-
         args = []
 
-        ks = config.get('live', 'config')
-        args.extend(['-c', ks])
+        ksfname = tempfile.gettempdir() + '/' + 'live_kickstart.ks'
+        args.extend(['-c', ksfname])
 
-        label = config.get('live', 'label')
+        with open(ksfname,'w') as fp:
+            fp.write(json.loads(kickstart))
+
+        label = self.buildconfig['live']['label']
         args.extend(['-f', label])
 
-        title = config.get('live','title')
+        title = self.buildconfig['live']['title']
         args.extend(['--title', title])
     
-        product = config.get('live', 'product')
+        product = self.buildconfig['live']['product']
         args.extend(['--product', product])
     
-        releasever = config.get('live', 'releasever')
+        releasever = self.buildconfig['live']['releasever']
         args.extend(['--releasever', releasever])
         
-        arch = config.get('live', 'arch')
+        arch = self.buildconfig['live']['arch']
         yb = yum.YumBase()
     
         if arch != yb.arch.canonarch:
             print 'Live image arch should be the same as the build arch'
             sys.exit(1)
     
-        tmpdir = config.get('live', 'tmpdir')
+        tmpdir = self.buildconfig['live']['tmpdir']
         args.extend(['-t', tmpdir])
 
-        cachedir = config.get('live', 'cachedir')
+        cachedir = self.buildconfig['live']['cachedir']
         args.extend(['--cache', cachedir])
 
-        logfile = config.get('live', 'logfile')
+        logfile = self.buildconfig['live']['logfile']
         args.extend(['--logfile', logfile])
 
         # Create the side repository if needed
-        nvr = config.get('live', 'nvr')
-        bid = config.get('live', 'bid')
+        nvr = self.buildconfig['live']['nvr']
+        bid = self.buildconfig['live']['bid']
 
         rpms_nvr = []
         if nvr != '':
@@ -345,20 +335,27 @@ class Worker():
     
         # prepare side repository
         rpms = rpms_nvr
-        arch = config.get('DEFAULT', 'arch')
-        tmpdir = config.get('live', 'tmpdir')
+        arch = self.buildconfig['default']['arch']
+        tmpdir = self.buildconfig['live']['tmpdir']
 
         if rpms:
             siderepo = self.prep_siderepo(tmpdir, rpms, arch)
             # Add side repo to the existing KS file
-            self.add_repo(ks, siderepo)
+            self.add_repo(ksfname, siderepo)
     
         # fire livecd-creator
         process_call = ['livecd-creator']
         process_call.extend(args)
-        subprocess.call(process_call)
 
-        # live image location
-        imgloc = ['{0:s}.iso'.format(label)]
+        try:
+            subprocess.call(process_call)
+        except Exception as e:
+            # do something with the exception message
+            # perhaps log it?
+            print traceback.format_exception(*sys.exc_info())
+            imgloc = None
+        else:
+            # live image location
+            imgloc = ['{0:s}.iso'.format(label)]
 
         return imgloc
