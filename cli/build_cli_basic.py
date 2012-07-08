@@ -20,63 +20,41 @@
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
 """ Command line interface to the image building code.
-Uses Celery for task distribution.
-See HOWTO for setup and usage instructions.
+Does not use Celery and hence has minimum setup requirements.
+Simply install the image_builder package and use away.
+
 """
 
-from tasks import build
-
-import json
 import ConfigParser
-import os
 import sys
+import os
+import json
+
+from image_builder.imagebuilder import ImageBuilder
 
 from util import Utilities
 
-class Cli:
+class CliBasic:
 
-    def __init__(self, config):
-        self.config = config
-
+    def __init__(self, buildconfig):
+        self.buildconfig = buildconfig
+        
     def build(self):
-
         util = Utilities()
 
-        buildconfig = util.get_dict(self.config)
-
-        arch = buildconfig['default']['arch']
-        #find an appropriate build node from nodes.conf
-        #based on the arch
-        config = ConfigParser.SafeConfigParser()
-        config.read('nodes.conf')
-        broker_url = config.get(arch,'broker_url')
-
-        #now create the celeryconfig.py using this broker_url
-        with open('celeryconfig.py','w') as f:
-            f.write('BROKER_URL = {0:s}\n'.format(broker_url))
-            f.write('CELERY_RESULT_BACKEND = "amqp"\n')
-    
-        buildconfig_json=json.dumps(buildconfig)
+        buildconfig = util.get_dict(self.buildconfig)
         ksstr = util.get_kickstart(buildconfig)
 
-        # task delegation
-        from celery.execute import send_task
-        from tasks import build
+        build = ImageBuilder(buildconfig, ksstr)
+        status = build.build()
 
-        if ksstr:
-            build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
-        else:
-            build.apply_async(args = buildconfig_json, serializer="json")
-
-        print 'Build task submitted'
-        
-        return
+        return status
 
 if __name__ == '__main__':
+    
     if len(sys.argv) == 1:
         print 'Must provide the path to the config file as the argument'
         sys.exit(1)
     
-    cli = Cli(sys.argv[1])
-    print cli.build()
-
+    clibasic = CliBasic(sys.argv[1])
+    print clibasic.build()
