@@ -67,6 +67,13 @@ try:
     worker_workdir = config.get('workers','workdir')
     workers.extend(workers_i686)
     workers.extend(workers_x86_64)
+
+    # Read SMTP config
+    SMTP_SERVER = config.get('SMTP', 'server')
+    SMTP_PORT = config.get('SMTP', 'port')
+    sender = config.get('SMTP', 'login')
+    password = config.get('SMTP', 'password')
+
 except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
     print 'One or more of the required sections/options missing in conf/deploy.conf'
     sys.exit(1)
@@ -85,15 +92,27 @@ with open('cli/nodes.conf','w') as f:
     f.write('[x86_64]\n')
     f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
+# Setup smtp.conf.conf in image_builder/
+with open('image_builder/smtp.conf','w') as f:
+    f.write('[SMTP]\n')
+    f.write('server={0:s}\n'.format(SMTP_SERVER))
+    f.write('port={0:s}\n'.format(SMTP_PORT))
+    f.write('login={0:s}\n'.format(sender))
+    f.write('password={0:s}\n'.format(password))
+
 # setup conf/celeryconfig_i686.py for workers
 # setup conf/celeryconfig_x86_64.py for workers
 with open('conf/celeryconfig_i686.py','w') as f:
     f.write('BROKER_URL  =  {0:s}\n'.format(i686_broker))
     f.write('CELERY_IMPORTS  =  ("tasks", )\n')
+    f.write('CELERY_RESULT_BACKEND = "amqp"\n')
+    #f.write('CELERYD_HIJACK_ROOT_LOGGER=False\n')
 
 with open('conf/celeryconfig_x86_64.py','w') as f:
     f.write('BROKER_URL  =  {0:s}\n'.format(x86_64_broker))
     f.write('CELERY_IMPORTS  =  ("tasks", )\n')
+    f.write('CELERY_RESULT_BACKEND = "amqp"\n')
+    #f.write('CELERYD_HIJACK_ROOT_LOGGER=False\n')
 
 # setup zdaemon_master.conf for Flask
 with open('conf/zdaemon_master.conf','w') as f:
@@ -108,10 +127,18 @@ with open('conf/zdaemon_master.conf','w') as f:
 with open('conf/zdaemon_worker.conf','w') as f:
     f.write('<runner>\n')
     logfile = '{0:s}/celery_task.log'.format(worker_workdir)
-    f.write('program /usr/bin/celeryd --events --loglevel=INFO --logfile={0:s}\n'.format(logfile))
+    f.write('program /usr/bin/celeryd --autoreload --events --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
     f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
+    f.write('</runner>\n')
+
+# setup zdaemon_monitor.conf for build monitor
+with open('conf/zdaemon_monitor.conf','w') as f:
+    f.write('<runner>\n')
+    f.write('program python image_builder/build_monitor.py\n')
+    f.write('directory {0:s}\n'.format(worker_workdir))
+    f.write('socket-name {0:s}/monitor.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
 
 @task
@@ -169,7 +196,8 @@ def copy_files_workers():
     celeryconfig_i686 = '{0:s}/celeryconfig_i686.py'.format(conf)
     celeryconfig_x86_64 = '{0:s}/celeryconfig_x86_64.py'.format(conf)
     celeryconfig = '{0:s}/celeryconfig.py'.format(worker_workdir)
-    zdaemon = '{0:s}/zdaemon_worker.conf'.format(conf)
+    zdaemon_worker = '{0:s}/zdaemon_worker.conf'.format(conf)
+    zdaemon_monitor = '{0:s}/zdaemon_monitor.conf'.format(conf)
 
     # create the work dirs if they do not exist
     run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
@@ -178,7 +206,8 @@ def copy_files_workers():
     put(setuppy, os.path.abspath(worker_workdir), use_sudo=True)
     put(taskspy, os.path.abspath(worker_workdir), use_sudo=True)
     put(image_builder, os.path.abspath(worker_workdir), use_sudo=True)
-    put(zdaemon, os.path.abspath(worker_workdir), use_sudo=True)
+    put(zdaemon_worker, os.path.abspath(worker_workdir), use_sudo=True)
+    put(zdaemon_monitor, os.path.abspath(worker_workdir), use_sudo=True)
 
     if env.host_string in workers_i686:
         put(celeryconfig_i686, celeryconfig, use_sudo=True)
@@ -200,10 +229,11 @@ def deploy_webapp():
 @hosts(workers)
 def deploy_workers():
     """ Deploy the workers. Basically start celeryd"""
-
+    
     with cd(worker_workdir):
         run('python setup.py install')
         run('service rabbitmq-server start')
+        run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
         run('celerymon --detach')
 
@@ -220,4 +250,4 @@ def run_tests():
     deps = 'pytest python-mock'
     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
     local('sudo python setup.py install')
-    local('py.test')    
+    local('py.test')

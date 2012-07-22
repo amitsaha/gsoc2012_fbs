@@ -20,35 +20,114 @@
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
 import os
+import logging
+import subprocess
 
 class Transfer:
     """ Image transfer module """
-    def __init__(self, staging, imgloc):
-        self.staging = staging
+    def __init__(self, buildconfig, imgloc, logfile):
+        self.buildconfig = buildconfig
+        self.staging = buildconfig['default']['staging']
         self.imgloc = imgloc
+        self.logfile = logfile
+        self.logger = logging.getLogger('imagebuilder')
 
-    #ftp
+    def transfer_local(self, staging):
+        ''' Local file system copy '''
+
+        if not os.path.exists(os.path.abspath(staging)):
+            os.mkdir(os.path.abspath(staging))
+            
+        if self.imgloc:
+            self.logger.info('Initiating local transfer of image(s) to {0:s}'.format(staging))
+            for img in self.imgloc:
+                subprocess.call(['cp', img, os.path.abspath(staging)+"/"])
+
+        # transfer the log
+        self.logger.info('Initiating local transfer of logs to {0:s}'.format(staging))
+        subprocess.call(['cp', self.logfile, os.path.abspath(staging)+"/"])
+
+        #live-cd creator's log file
+        if self.buildconfig['default']['type'] == 'live':
+            if self.buildconfig['live'].has_key('logfile'):
+                live_log = self.buildconfig['live']['logfile']
+                if os.path.exists(live_log):
+                    subprocess.call(['cp', live_log, os.path.abspath(staging)+"/"])
+        
+        return 0
+        
     def transfer_ftp(self):
         """ FTP image transfer """
-
         from ftplib import FTP
-        ftp = FTP(self.staging)
-        # anonymous
-        ftp.login()
-        # assumes a 'pub' directory where the files are to be 
-        # put
-        ftp.cwd('pub')
-        # transfer the files
-        for img in self.imgloc:
-            with open(img) as f:
-                # extract the filename from 'img'
-                head, fname = os.path.split(img)
-                ftp.storbinary('STOR {0:s}'.format(fname), f)
-        # end ftp session
-        ftp.close()
-        return
+        try:
+            ftp = FTP(self.staging)
+        except Exception as e:
+            self.logger.error('Connection to FTP server refused')
+            return -1
 
-    def notify(self):
-        """ Send Email notification to the requester"""
-        #TBD
-        pass
+        # anonymous
+        try:
+            ftp.login()
+        except Exception as e:
+            self.logger.error('Error logging into the FTP server. Check connectivity/anonymous login.')
+            ftp.close()
+            return -1
+        else:                          
+            # assumes a 'pub' directory where the files are to be 
+            # put
+            try:
+                ftp.cwd('pub')
+            except Exception as e:
+                self.logger.error('No pub/ sub-dir found on FTP server')
+                return -1
+                
+            # transfer the files
+            if self.imgloc:
+                self.logger.info('Initiating FTP transfer of image(s)')
+                for img in self.imgloc:
+                    with open(img) as f:
+                        # extract the filename from 'img'
+                        head, fname = os.path.split(img)
+                        try:
+                            ftp.storbinary('STOR {0:s}'.format(fname), f)
+                        except Exception as e:
+                            self.logger.error('Could not store file on remote server')
+                            return -1
+                    
+            # transfer the log
+            self.logger.info('Initiating FTP transfer of logs')
+
+            # image builder log file
+            with open(self.logfile) as f:
+                # extract the filename from logfile
+                head, fname = os.path.split(self.logfile)
+                try:
+                    ftp.storbinary('STOR {0:s}'.format(fname), f)
+                except Exception as e:
+                    self.logger.error('Could not store file on remote server')
+                    return -1
+
+            #live-cd creator's log file
+            if self.buildconfig['default']['type'] == 'live':
+                if self.buildconfig['live'].has_key('logfile'):
+                    live_log = self.buildconfig['live']['logfile']
+                    with open(live_log) as f:
+                        # extract the filename from logfile
+                        head, fname = os.path.split(live_log)
+                        try:
+                            ftp.storbinary('STOR {0:s}'.format(fname), f)
+                        except Exception as e:
+                            self.logger.error('Could not store file on remote server')
+                            return -1
+                        
+            ftp.close()
+            return 0
+
+    def transfer(self):
+        if self.staging.startswith('file:///'):
+            # bad hack to remove the trailing file:///
+            status = self.transfer_local(self.staging.split('//')[1])
+        else:
+            status = self.transfer_ftp()
+
+        return status

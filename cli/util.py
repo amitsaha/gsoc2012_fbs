@@ -29,8 +29,8 @@ import ConfigParser
 class Utilities:
     
     def get_dict(self, buildconfig):
-
         # Get the dictionary dump from the config file
+
         config = ConfigParser.SafeConfigParser()
         config.read(buildconfig)
     
@@ -79,15 +79,21 @@ class Utilities:
             if ks_fname.startswith(('http', 'https', 'ftp')):
                 # download and then JSON dump
                 import urllib2
-                ksstr = json.dumps(urllib2.urlopen(ks_fname).read())
+                try:
+                    print 'Reading remote KS file'
+                    ksstr = json.dumps(urllib2.urlopen(ks_fname).read())
+                except Exception as e:
+                    print 'Error retrieving remote KS file'
+                    ksstr = None
             else:
-                ks = open(ks_fname)
-                ksstr = json.dumps(ks.read())
-                ks.close()
+                try:
+                    print 'Reading KS file'
+                    with open(ks_fname) as ks:
+                        ksstr = json.dumps(ks.read())
+                except Exception as e:
+                    ksstr = None
+                    print 'Error reading specified KS file'
         else:
             ksstr = None
 
         return ksstr
-        
-
-

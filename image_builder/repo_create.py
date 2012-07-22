@@ -23,6 +23,7 @@ import os
 import koji
 import urllib
 import subprocess
+import logging
 
 class RepoCreate(object):
     """ Create side repository with additional packages """
@@ -33,6 +34,7 @@ class RepoCreate(object):
         self.kojiurl = 'http://koji.fedoraproject.org/kojihub'
         self.pkgurl = 'http://koji.fedoraproject.org/packages'
         self.koji_connection = self.get_koji_connection()
+        self.logger = logging.getLogger('imagebuilder')
         
     def get_koji_connection(self):
         """ Return a Connection to Koji hub """
@@ -55,6 +57,8 @@ class RepoCreate(object):
 
     def download_packages(self, packages):
         """ Download the packages """
+        self.logger.info('Downloading packages for Side repository')
+
         rpms = []
 
         for package in packages:

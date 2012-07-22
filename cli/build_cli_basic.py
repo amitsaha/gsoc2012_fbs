@@ -24,14 +24,12 @@ Does not use Celery and hence has minimum setup requirements.
 Simply install the image_builder package and use away.
 
 """
-
 import ConfigParser
 import sys
 import os
 import json
 
 from image_builder.imagebuilder import ImageBuilder
-
 from util import Utilities
 
 class CliBasic:
@@ -40,21 +38,36 @@ class CliBasic:
         self.buildconfig = buildconfig
         
     def build(self):
+
         util = Utilities()
 
         buildconfig = util.get_dict(self.buildconfig)
         ksstr = util.get_kickstart(buildconfig)
 
         build = ImageBuilder(buildconfig, ksstr)
+        logfile = build.getlogfile()
+
+        print 'Initiating Build Process. See {0:s} for progress'.format(logfile)
+
         status = build.build()
 
         return status
 
 if __name__ == '__main__':
+
+    if not os.geteuid() == 0:
+        sys.exit('Script must be run as root')
     
     if len(sys.argv) == 1:
         print 'Must provide the path to the config file as the argument'
         sys.exit(1)
+
+    # for local building mode
+    # if you want email notifications, set this to
+    # 0
+    os.environ['LOCAL_MODE'] = '1'
     
     clibasic = CliBasic(sys.argv[1])
-    print clibasic.build()
+    status = clibasic.build()
+
+    print 'Build process complete.'

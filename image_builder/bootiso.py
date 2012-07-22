@@ -26,6 +26,7 @@ import ConfigParser
 import yum
 import shutil
 import sys
+import logging
 
 class Bootiso():
     """ Create Boot ISO via lorax """
@@ -39,6 +40,7 @@ class Bootiso():
         self.proxy = proxy
         self.outputdir = outputdir
         self.product = product
+        self.logger = logging.getLogger('imagebuilder')
 
     def get_yum_base_object(self, installroot, repositories, mirrors, proxy, tempdir="/tmp"):
         """ with help from  
@@ -146,10 +148,10 @@ class Bootiso():
         yb = self.get_yum_base_object(installtree, self.repos, self.mirrors, self.proxy, yumtempdir)
         
         if yb is None:
-            print "error: unable to create the yumbase object"
+            self.logger.error('Unable to create the yumbase object for creating boot ISO')
             shutil.rmtree(tempdir)
-            sys.exit(1)
-            
+            raise Exception 
+
         # run lorax
         lorax = pylorax.Lorax()
 
@@ -157,4 +159,6 @@ class Bootiso():
         lorax.configure()
         
         #fire
+        self.logger.info('All set. Spawning boot iso creation using lorax.')
         lorax.run(yb, self.product, self.version, self.release, None, None, False, tempdir, self.outputdir, self.arch, None, False)
+

@@ -30,6 +30,7 @@ import json
 import ConfigParser
 import os
 import sys
+import time
 
 from util import Utilities
 
@@ -56,21 +57,21 @@ class Cli:
             f.write('BROKER_URL = {0:s}\n'.format(broker_url))
             f.write('CELERY_RESULT_BACKEND = "amqp"\n')
     
-        buildconfig_json=json.dumps(buildconfig)
+        buildconfig_json = json.dumps(buildconfig)
         ksstr = util.get_kickstart(buildconfig)
 
         # task delegation
         from celery.execute import send_task
         from tasks import build
 
-        if ksstr:
-            build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
+        try:
+            result_obj = build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
+        except Exception as e:
+            sys.exit('Error in communicating with Celery')
         else:
-            build.apply_async(args = buildconfig_json, serializer="json")
+            result = result_obj.get()
 
-        print 'Build task submitted'
-        
-        return
+        return result
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
@@ -78,5 +79,18 @@ if __name__ == '__main__':
         sys.exit(1)
     
     cli = Cli(sys.argv[1])
-    print cli.build()
+    result = cli.build()
 
+    status = result[0]
+
+    if status == 0:
+        print 'Image built and transferred successfully'
+
+    if status == -1:
+        print 'Image could not be built/tansferred successfully'
+
+    logfile = result[1]
+    with open('imagebuilder.log','w') as f:
+        f.write(json.loads(logfile))
+
+    print 'See imagebuilder.log for details'

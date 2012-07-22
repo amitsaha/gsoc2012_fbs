@@ -24,9 +24,12 @@ import koji
 import yum
 import sys
 import os
+import shutil
 import tempfile
 import traceback
 import json
+import platform
+import logging
 
 from pykickstart.parser import KickstartParser
 from pykickstart.version import makeVersion
@@ -40,14 +43,14 @@ class Worker():
     """
 
     def __init__(self, buildconfig):
-
         self.buildconfig = buildconfig
         self.kojihub_url = 'http://koji.fedoraproject.org/kojihub'
-        self.koji_conn = self.get_koji_connection()
+        self.logger = logging.getLogger('imagebuilder')
         
     def get_koji_connection(self):
         """ Return a Connection to Koji hub """
-        return koji.ClientSession(self.kojihub_url)
+        koji_conn = koji.ClientSession(self.kojihub_url)
+        return koji_conn
 
     def add_repo(self, ksfile, siderepo):
         """ Add a repository to an existing KS file """
@@ -72,20 +75,31 @@ class Worker():
         """ get NVR given build ID """
         nvr = []
         
+        try:
+            self.koji_conn = self.get_koji_connection()
+        except Exception as e:
+            self.logger.error('Error connecting to Koji hub')
+            return None
+        
         for bid in bids:
             # get the build information for this bid
-            build = self.koji_conn.getBuild(int(bid))
-            # NVR
-            package = build['nvr']
-            nvr.append(package)
+            try:
+                build = self.koji_conn.getBuild(int(bid))
+            except Exception as e:
+                self.logger.error('Error getting build information for package with Build ID {0:s}'.format(bid))
+                return None
+            else:
+                # NVR
+                package = build['nvr']
+                nvr.append(package)
         
         return nvr
 
     def get_rpms_nvr(self, nvr, bid):
-        ''' Take the NVRs and BIDs and return the list
+        """ Take the NVRs and BIDs and return the list
         of all NVR's
 
-        '''
+        """
         rpms_nvr = []
         arch = self.buildconfig['default']['arch']
 
@@ -99,8 +113,11 @@ class Worker():
                 bids.append(rpm)
             
             rpms_bid = self.get_nvr(bids)
-            rpms_nvr.extend(rpms_bid)
-
+            if rpms_bid:
+                rpms_nvr.extend(rpms_bid)
+            else:
+                return None
+    
         return rpms_nvr
 
     def prep_siderepo(self, workdir, packages, arch):
@@ -110,9 +127,15 @@ class Worker():
         arch.append('noarch')
         repodir = '{0:s}/siderepo'.format(workdir)
         repo_create = RepoCreate(repodir, arch)
-        repo_create.make_repo(packages)
 
-        repo_url = 'file://{0:s}'.format(repodir)
+        try:
+            repo_create.make_repo(packages)
+        except Exception as e:
+            self.logger.error('Error creating side repository')
+            self.logger.error(traceback.format_exception(*sys.exc_info()))
+            repo_url = None
+        else:
+            repo_url = 'file://{0:s}'.format(repodir)
         return repo_url
 
     def gather_repos(self, release):
@@ -142,15 +165,28 @@ class Worker():
         """ Build boot iso """
 
         arch = self.buildconfig['default']['arch']
+        if arch != platform.machine():
+            self.logger.info('Boot image arch requested should be the same as the build arch')
+            return None
+
         outdir = self.buildconfig['boot']['outdir']
         workdir = self.buildconfig['boot']['workdir']
         product = self.buildconfig['boot']['product']
         release = self.buildconfig['boot']['release']
         version = self.buildconfig['boot']['version']
         proxy = self.buildconfig['boot']['proxy']
-    
+        
+        #checks
         if proxy == '':
             proxy = None
+
+        if os.path.exists(workdir):
+            shutil.rmtree(workdir)
+            os.mkdir(workdir)
+
+        if os.path.exists(outdir):
+            shutil.rmtree(outdir)
+            os.mkdir(outdir)
 
         # gather repos and mirrors
         repos, mirrors = self.gather_repos(release)
@@ -160,22 +196,31 @@ class Worker():
         bid = self.buildconfig['boot']['bid']
 
         # prepare side repository
-        rpms = self.get_rpms_nvr(nvr, bid)
-        if rpms:
-            siderepo = self.prep_siderepo(workdir, rpms, arch)
-            repos.append(siderepo)
+        if nvr or bid:
+            rpms = self.get_rpms_nvr(nvr, bid)
+
+            if rpms:
+                self.logger.info('Creating side repository')
+                siderepo = self.prep_siderepo(workdir, rpms, arch)
+
+                if siderepo is None:
+                    return None
+                else:
+                    self.logger.info('Side repository created')
+                    repos.append(siderepo)
+            else:
+                return None
 
         boot_builder = Bootiso(arch, release, version, repos, mirrors, proxy, outdir, product)
 
         try:
             boot_builder.make_iso()
         except Exception as e:
-            # do something with the exception message
-            # perhaps log it?
-            print traceback.format_exception(*sys.exc_info())
+            self.logger.error(traceback.format_exception(*sys.exc_info()))
             imgloc = None
         else:
             # boot image location
+            self.logger.info('Boot ISO built succesfully')
             imgloc = [os.path.abspath(outdir)+'/images/boot.iso']
 
         return imgloc
@@ -184,6 +229,13 @@ class Worker():
         """ Builds DVD image """
 
         args = []
+
+        arch = self.buildconfig['default']['arch']
+        if arch != platform.machine():
+            self.logger.error('DVD image arch requested should be the same as the build arch')
+            return None
+
+        name = self.buildconfig['dvd']['name']
 
         ver = self.buildconfig['dvd']['version']
         args.extend(['--ver', ver])
@@ -221,7 +273,8 @@ class Worker():
             else:
                 args.extend([stage])
         else:
-            print 'Invalid stage entered'
+            self.logger.error('Invalid stage entered')
+            return None
                         
         ksfname = tempfile.gettempdir() + '/' + 'dvd_kickstart.ks'
         args.extend(['-c', ksfname])
@@ -232,27 +285,34 @@ class Worker():
         # Create the side repository if needed
         nvr = self.buildconfig['dvd']['nvr']
         bid = self.buildconfig['dvd']['bid']
-
-        arch = self.buildconfig['default']['arch']
         workdir = self.buildconfig['dvd']['workdir']
 
         # prepare side repository
-        rpms = get_rpms_nvr(nvr, bid)
-        if rpms:
-            siderepo = self.prep_siderepo(workdir, rpms, arch)
-            # Add side repo to the existing KS file
-            self.add_repo(ksfname, siderepo)
+        if nvr or bid:
+            rpms = self.get_rpms_nvr(nvr, bid)
+
+            if rpms:
+                self.logger.info('Creating side repository')
+                siderepo = self.prep_siderepo(workdir, rpms, arch)
+
+                if siderepo is None:
+                    return None
+                else:
+                    self.logger.info('Side repository created')
+                    # Add side repo to the existing KS file
+                    self.add_repo(ksfname, siderepo)
+            else:
+                return None
     
         # fire pungi
         process_call = ['pungi']
         process_call.extend(args)
 
         try:
-            subprocess.call(process_call)
-        except Exception as e:
-            # do something with the exception message
-            # perhaps log it?
-            print traceback.format_exception(*sys.exc_info())
+            self.logger.info('All set. Spawning DVD iso creation process.')
+            subprocess.check_call(process_call)
+        except subprocess.CalledProcessError:
+            self.logger.error(traceback.format_exception(*sys.exc_info()))
             imgloc = None
         else:
             # DVD image and other files location
@@ -296,11 +356,9 @@ class Worker():
         args.extend(['--releasever', releasever])
         
         arch = self.buildconfig['live']['arch']
-        yb = yum.YumBase()
-    
-        if arch != yb.arch.canonarch:
-            print 'Live image arch should be the same as the build arch'
-            sys.exit(1)
+        if arch != platform.machine():
+            self.logger.error('Live image arch requested should be the same as the build node arch')
+            return None
     
         tmpdir = self.buildconfig['live']['tmpdir']
         args.extend(['-t', tmpdir])
@@ -316,24 +374,31 @@ class Worker():
         bid = self.buildconfig['live']['bid']
 
         # prepare side repository
-        rpms = get_rpms_nvr(nvr, bid)
-        
-        if rpms:
-            tmpdir = self.buildconfig['live']['tmpdir']
-            siderepo = self.prep_siderepo(tmpdir, rpms, arch)
-            # Add side repo to the existing KS file
-            self.add_repo(ksfname, siderepo)
+        if nvr or bid:
+            rpms = self.get_rpms_nvr(nvr, bid)
+
+            if rpms:
+                self.logger.info('Creating side repository')
+                siderepo = self.prep_siderepo(tmpdir, rpms, arch)
+
+                if siderepo is None:
+                    return None
+                else:
+                    self.logger.info('Side repository created')
+                    # Add side repo to the existing KS file
+                    self.add_repo(ksfname, siderepo)
+            else:
+                return None
     
         # fire livecd-creator
         process_call = ['livecd-creator']
         process_call.extend(args)
 
         try:
-            subprocess.call(process_call)
-        except Exception as e:
-            # do something with the exception message
-            # perhaps log it?
-            print traceback.format_exception(*sys.exc_info())
+            self.logger.info('Calling livecd-creator')
+            subprocess.check_call(process_call)
+        except subprocess.CalledProcessError:
+            self.logger.error(traceback.format_exception(*sys.exc_info()))
             imgloc = None
         else:
             # live image location
