@@ -8,16 +8,16 @@ STATUS
 
 + Web Forms, REST API and Command Line interface for build job submission
 + Can use multiple worker nodes to build images
-+ Copies the image(s) to the designated FTP location specified in staging.
++ Copies the image(s) to the designated FTP location/local file system specified in staging
++ HTTP based Build Job monitoring, Email Notifications
+
 
 TODO
 ----
 
 + Unit tests
-+ Monitoring/Book-keeping of Jobs submitted/processed/running/finished
 + Validating the imagebuild.conf syntax/semantics for the CLI interfaces
 + Test building x86_64 images
-+ Email notification
 + Need to think more on how the images will be stored and ability to identify
   an existing image uniquely. email_timestamp?
 
