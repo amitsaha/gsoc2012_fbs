@@ -48,7 +48,8 @@ class ImageBuilder:
         self.logger = logging.getLogger('imagebuilder')
         self.logfile = self.initlog()
         # for celery
-        worker_process_init.connect(self.initlog())
+        if not os.environ.has_key('LOCAL_MODE'):
+            worker_process_init.connect(self.initlog())
         self.monitor = self.checkmonitor()
         self.notify_email_init()
         
