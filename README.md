@@ -17,9 +17,6 @@ TODO
 
 + Unit tests
 + Validating the imagebuild.conf syntax/semantics for the CLI interfaces
-+ Test building x86_64 images
-+ Need to think more on how the images will be stored and ability to identify
-  an existing image uniquely. email_timestamp?
 
 GOOD-TO-HAVE
 -----------
