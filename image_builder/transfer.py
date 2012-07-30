@@ -22,6 +22,7 @@
 import os
 import logging
 import subprocess
+import time
 
 class Transfer:
     """ Image transfer module """
@@ -55,7 +56,7 @@ class Transfer:
                     subprocess.call(['cp', live_log, os.path.abspath(staging)+"/"])
         
         return 0
-        
+    
     def transfer_ftp(self):
         """ FTP image transfer """
         from ftplib import FTP
@@ -80,7 +81,7 @@ class Transfer:
             except Exception as e:
                 self.logger.error('No pub/ sub-dir found on FTP server')
                 return -1
-                
+            
             # transfer the files
             if self.imgloc:
                 self.logger.info('Initiating FTP transfer of image(s)')
@@ -88,6 +89,10 @@ class Transfer:
                     with open(img) as f:
                         # extract the filename from 'img'
                         head, fname = os.path.split(img)
+                        # get a filename of the form imgname_timestamp.iso
+                        time_now = str(time.time()).split('.')
+                        fname = fname.split('.')[0] + '-{0:s}'.format(self.buildconfig['default']['arch']) + '-{0:s}.'.format(time_now[0]+time_now[1]) + fname.split('.')[1]
+                        self.logger.info('Copying {0:s}'.format(fname))
                         try:
                             ftp.storbinary('STOR {0:s}'.format(fname), f)
                         except Exception as e:
@@ -101,6 +106,7 @@ class Transfer:
             with open(self.logfile) as f:
                 # extract the filename from logfile
                 head, fname = os.path.split(self.logfile)
+                self.logger.info('Copying {0:s}'.format(fname))
                 try:
                     ftp.storbinary('STOR {0:s}'.format(fname), f)
                 except Exception as e:
@@ -114,6 +120,7 @@ class Transfer:
                     with open(live_log) as f:
                         # extract the filename from logfile
                         head, fname = os.path.split(live_log)
+                        self.logger.info('Copying {0:s}'.format(fname))
                         try:
                             ftp.storbinary('STOR {0:s}'.format(fname), f)
                         except Exception as e:
