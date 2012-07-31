@@ -50,8 +50,9 @@ except ConfigParser.ParsingError:
     print 'Error parsing {0:s}'.format(deploy_conf)
     sys.exit(1)
 
-# Read broker config
+
 try:
+    # Read broker config
     i686_broker = config.get('broker','i686')
     x86_64_broker = config.get('broker','x86_64')
 
@@ -127,7 +128,7 @@ with open('conf/zdaemon_master.conf','w') as f:
 with open('conf/zdaemon_worker.conf','w') as f:
     f.write('<runner>\n')
     logfile = '{0:s}/celery_task.log'.format(worker_workdir)
-    f.write('program /usr/bin/celeryd --autoreload --events --loglevel=INFO --logfile={0:s}\n'.format(logfile))
+    f.write('program /usr/bin/celeryd --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
     f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
@@ -149,15 +150,15 @@ def install_packages_master():
     """
 
     deps = 'python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server python-zdaemon'
-    run('sudo yum --assumeyes install {0:s}'.format(deps)) 
+    run('sudo yum --assumeyes --enablerepo=updates* install {0:s}'.format(deps)) 
     
 @task
 @hosts(workers)
 def install_packages_workers():
     """ Install dependencies on the workers"""
 
-    deps = 'koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon'
-    run('yum --assumeyes install {0:s}'.format(deps))
+    deps = 'koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon python-flask python-amqplib'
+    run('yum --assumeyes --enablerepo=updates* install {0:s}'.format(deps))
     
 @task
 @hosts(master)
@@ -229,14 +230,19 @@ def deploy_webapp():
 @hosts(workers)
 def deploy_workers():
     """ Deploy the workers. Basically start celeryd"""
+
+    smtpconf = os.path.abspath('{0:s}/image_builder/smtp.conf'.format(os.path.abspath(worker_workdir)))
+    libdir = os.path.abspath('/usr/lib/python2.7/site-packages/image_builder')
     
     with cd(worker_workdir):
         run('python setup.py install')
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
-        run('celerymon --detach')
+        #run('celerymon --detach')
 
+    run('cp {0:s} {1:s}'.format(smtpconf, libdir))
+    
 @task
 def setup_cli():
     """ Setup for using the CLI """
