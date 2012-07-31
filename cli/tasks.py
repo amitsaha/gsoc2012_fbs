@@ -8,8 +8,6 @@ from image_builder.imagebuilder import ImageBuilder
 @task
 def build(buildconfig, kickstart):
 
-    os.environ['GMAIL_PASS'] = 'gsoc2012'
-
     builder = ImageBuilder(json.loads(buildconfig), kickstart)
     status = builder.build()
 
