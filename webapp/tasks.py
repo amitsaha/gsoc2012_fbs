@@ -1,35 +1,21 @@
-import subprocess
-from celery.task import task
+from __future__ import absolute_import
 import json
 import os
-import shutil
-import ConfigParser
+
+from celery.task import task
+from image_builder.imagebuilder import ImageBuilder
 
 @task
-def build(config,kickstart=[]):
-    
-    # Check for /etc/imagebuild
-    if not os.path.exists('/etc/imagebuild'):
-        os.makedirs('/etc/imagebuild')
-    else:
-        shutil.rmtree('/etc/imagebuild')
-        os.makedirs('/etc/imagebuild')
+def build(buildconfig, kickstart):
 
-    # recreate .conf file from config 
-    # and copy it to /etc/imagebuild/imagebuild.conf
+    os.environ['GMAIL_PASS'] = 'gsoc2012'
 
-    configstr=json.loads(config)
-    with open('/etc/imagebuild/imagebuild.conf','w') as f:
-        f.write(configstr)
+    builder = ImageBuilder(json.loads(buildconfig), kickstart)
+    status = builder.build()
 
-    if kickstart:
-        fname=kickstart[0]
-        ks=json.loads(kickstart[1])
-        with open('/etc/imagebuild/{0:s}'.format(fname),'w') as f:
-            f.write(ks)
+    # JSON dump of the log file
+    logfile = builder.getlogfile()
+    with open(logfile,'r') as f:
+        logfile_str = json.dumps(f.read())
 
-    from image_builder.imagebuilder import ImageBuilder
-    build = ImageBuilder()
-    build.build()
-
-    return
+    return [status, logfile_str]
