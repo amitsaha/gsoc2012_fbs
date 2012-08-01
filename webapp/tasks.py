@@ -2,13 +2,14 @@ from __future__ import absolute_import
 import json
 import os
 
-from celery.task import task
+from celery import Celery
 from image_builder.imagebuilder import ImageBuilder
 
-@task
-def build(buildconfig, kickstart):
+celery = Celery()
+celery.config_from_object('celeryconfig')
 
-    os.environ['GMAIL_PASS'] = 'gsoc2012'
+@celery.task
+def build(buildconfig, kickstart):
 
     builder = ImageBuilder(json.loads(buildconfig), kickstart)
     status = builder.build()
