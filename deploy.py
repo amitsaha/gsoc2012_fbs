@@ -93,13 +93,12 @@ with open('cli/nodes.conf','w') as f:
     f.write('[x86_64]\n')
     f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
-# Setup smtp.conf.conf in image_builder/
-with open('image_builder/smtp.conf','w') as f:
-    f.write('[SMTP]\n')
-    f.write('server={0:s}\n'.format(SMTP_SERVER))
-    f.write('port={0:s}\n'.format(SMTP_PORT))
-    f.write('login={0:s}\n'.format(sender))
-    f.write('password={0:s}\n'.format(password))
+# Setup smtp.py in image_builder/
+with open('image_builder/smtp.py','w') as f:
+    f.write('smtp_server={0:s}\n'.format(SMTP_SERVER))
+    f.write('smtp_port={0:s}\n'.format(SMTP_PORT))
+    f.write('smtp_login={0:s}\n'.format(sender))
+    f.write('smtp_password={0:s}\n'.format(password))
 
 # setup conf/celeryconfig_i686.py for workers
 # setup conf/celeryconfig_x86_64.py for workers
@@ -231,18 +230,12 @@ def deploy_webapp():
 def deploy_workers():
     """ Deploy the workers. Basically start celeryd"""
 
-    smtpconf = os.path.abspath('{0:s}/image_builder/smtp.conf'.format(os.path.abspath(worker_workdir)))
-    libdir = os.path.abspath('/usr/lib/python2.7/site-packages/image_builder')
-    
     with cd(worker_workdir):
         run('python setup.py install')
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
         #run('celerymon --detach')
-
-    run('cp {0:s} {1:s}'.format(smtpconf, libdir))
-    
 @task
 def setup_cli():
     """ Setup for using the CLI """

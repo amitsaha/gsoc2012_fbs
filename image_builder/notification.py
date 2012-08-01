@@ -23,6 +23,8 @@ import smtplib
 import logging
 import ConfigParser
 
+from image_builder.smtp import *
+
 class Notification:
     def __init__(self):
 
@@ -30,12 +32,10 @@ class Notification:
         self.getconfig()
 
     def getconfig(self):
-        config = ConfigParser.SafeConfigParser()
-        config.read('smtp.conf')
-        self.SMTP_SERVER = config.get('SMTP', 'server')
-        self.SMTP_PORT = config.get('SMTP', 'port')
-        self.sender = config.get('SMTP', 'login')
-        self.password = config.get('SMTP', 'password')
+        self.SMTP_SERVER =  smtp_server
+        self.SMTP_PORT = smtp_port
+        self.sender = smtp_login
+        self.password = smtp_password
 
     def send_email(self, recipient, headers, message):
         
