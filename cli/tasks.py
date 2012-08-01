@@ -2,10 +2,13 @@ from __future__ import absolute_import
 import json
 import os
 
-from celery.task import task
+from celery import Celery
 from image_builder.imagebuilder import ImageBuilder
 
-@task
+celery = Celery()
+celery.config_from_object('celeryconfig')
+
+@celery.task
 def build(buildconfig, kickstart):
 
     builder = ImageBuilder(json.loads(buildconfig), kickstart)

@@ -127,7 +127,7 @@ with open('conf/zdaemon_master.conf','w') as f:
 with open('conf/zdaemon_worker.conf','w') as f:
     f.write('<runner>\n')
     logfile = '{0:s}/celery_task.log'.format(worker_workdir)
-    f.write('program /usr/bin/celeryd --loglevel=INFO --logfile={0:s}\n'.format(logfile))
+    f.write('program /bin/celery -A tasks worker --loglevel=INFO --logfile={0:s}\n'.format(logfile))
     f.write('directory {0:s}\n'.format(worker_workdir))
     f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
     f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
