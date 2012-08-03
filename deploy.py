@@ -104,15 +104,13 @@ with open('image_builder/smtp.py','w') as f:
 # setup conf/celeryconfig_x86_64.py for workers
 with open('conf/celeryconfig_i686.py','w') as f:
     f.write('BROKER_URL  =  {0:s}\n'.format(i686_broker))
-    f.write('CELERY_IMPORTS  =  ("tasks", )\n')
     f.write('CELERY_RESULT_BACKEND = "amqp"\n')
-    #f.write('CELERYD_HIJACK_ROOT_LOGGER=False\n')
+    f.write('CELERY_IMPORTS = ("tasks", )\n')
 
 with open('conf/celeryconfig_x86_64.py','w') as f:
     f.write('BROKER_URL  =  {0:s}\n'.format(x86_64_broker))
-    f.write('CELERY_IMPORTS  =  ("tasks", )\n')
     f.write('CELERY_RESULT_BACKEND = "amqp"\n')
-    #f.write('CELERYD_HIJACK_ROOT_LOGGER=False\n')
+    f.write('CELERY_IMPORTS = ("tasks", )\n')
 
 # setup zdaemon_master.conf for Flask
 with open('conf/zdaemon_master.conf','w') as f:
@@ -148,16 +146,24 @@ def install_packages_master():
     web application will run
     """
 
-    deps = 'python-flask python-flask-wtf python-wtforms python-celery python-amqplib rabbitmq-server python-zdaemon'
-    run('sudo yum --assumeyes --enablerepo=updates* install {0:s}'.format(deps)) 
+    deps = 'python-flask python-flask-wtf python-wtforms python-amqplib rabbitmq-server python-zdaemon'
+    run('sudo yum --assumeyes --enablerepo=updates install {0:s}'.format(deps)) 
+
+    # install celery 3.0 (not available in repos)
+    run('yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
+    run('pip-python install celery')
     
 @task
 @hosts(workers)
 def install_packages_workers():
     """ Install dependencies on the workers"""
 
-    deps = 'koji pykickstart lorax livecd-tools pungi python-celery rabbitmq-server python-zdaemon python-flask python-amqplib'
-    run('yum --assumeyes --enablerepo=updates* install {0:s}'.format(deps))
+    deps = 'koji pykickstart lorax livecd-tools pungi rabbitmq-server python-zdaemon python-flask python-amqplib spin-kickstarts'
+    run('yum --assumeyes --enablerepo=updates install {0:s}'.format(deps))
+
+    # install celery 3.0 (not available in repos)
+    run('yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
+    run('pip-python install celery')
     
 @task
 @hosts(master)
@@ -222,7 +228,6 @@ def deploy_webapp():
 
     with cd(master_workdir):
         run('sudo python setup.py install')
-        print 'Starting Web application'
         run('sudo /usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
     
 @task
@@ -235,13 +240,24 @@ def deploy_workers():
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
-        #run('celerymon --detach')
+
+    run('service iptables stop')
+
+    # copy the /usr/share/spin-kickstarts to /tmp
+    # for Live and DVD image building.
+    # Hence the supplied KS file need not be ksflattened
+    run('cp /usr/share/spin-kickstarts/*.ks /tmp/')
+
 @task
 def setup_cli():
     """ Setup for using the CLI """
-    deps = 'python-celery python-amqplib rabbitmq-server'
+    deps = 'python-amqplib rabbitmq-server'
     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
     local('sudo python setup.py install')
+
+    # install celery 3.0 (not available in repos)
+    run('sudo yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
+    run('sudo pip-python install celery')
 
 @task
 def run_tests():
