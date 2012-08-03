@@ -30,7 +30,7 @@ import os
 import json
 
 from image_builder.imagebuilder import ImageBuilder
-from util import Utilities
+from image_builder.util import Utilities
 
 class CliBasic:
 

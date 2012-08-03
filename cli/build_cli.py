@@ -23,16 +23,13 @@
 Uses Celery for task distribution.
 See HOWTO for setup and usage instructions.
 """
-
-from tasks import build
-
 import json
 import ConfigParser
 import os
 import sys
 import time
 
-from util import Utilities
+from image_builder.util import Utilities
 
 class Cli:
 
@@ -56,12 +53,12 @@ class Cli:
         with open('celeryconfig.py','w') as f:
             f.write('BROKER_URL = {0:s}\n'.format(broker_url))
             f.write('CELERY_RESULT_BACKEND = "amqp"\n')
+            f.write('\n')
     
         buildconfig_json = json.dumps(buildconfig)
         ksstr = util.get_kickstart(buildconfig)
 
         # task delegation
-        from celery.execute import send_task
         from tasks import build
 
         try:
