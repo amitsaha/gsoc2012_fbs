@@ -139,6 +139,17 @@ with open('conf/zdaemon_monitor.conf','w') as f:
     f.write('socket-name {0:s}/monitor.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
 
+# setup zdaemon_celeryd.conf for celeryd
+with open('conf/zdaemon_flower.conf','w') as f:
+    f.write('<runner>\n')
+    logfile = '{0:s}/celery_flower.log'.format(worker_workdir)
+    f.write('program /bin/celery flower\n')
+    f.write('directory {0:s}\n'.format(worker_workdir))
+    f.write('transcript {0:s}/zdaemon_flower.log\n'.format(worker_workdir))
+    f.write('socket-name {0:s}/celery_flower.sock\n'.format(worker_workdir))    
+    f.write('</runner>\n')
+
+
 @task
 @hosts(master)
 def install_packages_master():
@@ -150,8 +161,8 @@ def install_packages_master():
     run('sudo yum --assumeyes --enablerepo=updates install {0:s}'.format(deps)) 
 
     # install celery 3.0 (not available in repos)
-    run('yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
-    run('pip-python install celery')
+    run('sudo yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
+    run('sudo pip-python install celery')
     
 @task
 @hosts(workers)
@@ -164,6 +175,8 @@ def install_packages_workers():
     # install celery 3.0 (not available in repos)
     run('yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
     run('pip-python install celery')
+    run('pip-python install flower')
+    
     
 @task
 @hosts(master)
@@ -204,7 +217,8 @@ def copy_files_workers():
     celeryconfig = '{0:s}/celeryconfig.py'.format(worker_workdir)
     zdaemon_worker = '{0:s}/zdaemon_worker.conf'.format(conf)
     zdaemon_monitor = '{0:s}/zdaemon_monitor.conf'.format(conf)
-
+    zdaemon_flower = '{0:s}/zdaemon_flower.conf'.format(conf)
+    
     # create the work dirs if they do not exist
     run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
     
@@ -214,6 +228,7 @@ def copy_files_workers():
     put(image_builder, os.path.abspath(worker_workdir), use_sudo=True)
     put(zdaemon_worker, os.path.abspath(worker_workdir), use_sudo=True)
     put(zdaemon_monitor, os.path.abspath(worker_workdir), use_sudo=True)
+    put(zdaemon_flower, os.path.abspath(worker_workdir), use_sudo=True)
 
     if env.host_string in workers_i686:
         put(celeryconfig_i686, celeryconfig, use_sudo=True)
@@ -223,7 +238,7 @@ def copy_files_workers():
 
 @task
 @hosts(master)
-def deploy_webapp():
+def deploy_master():
     """ Deploy the web application"""
 
     with cd(master_workdir):
@@ -240,9 +255,9 @@ def deploy_workers():
         run('service rabbitmq-server start')
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
+        run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_flower.conf start'.format(worker_workdir))
 
     run('service iptables stop')
-
     # copy the /usr/share/spin-kickstarts to /tmp
     # for Live and DVD image building.
     # Hence the supplied KS file need not be ksflattened

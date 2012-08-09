@@ -86,13 +86,18 @@ class Transfer:
             if self.imgloc:
                 self.logger.info('Initiating FTP transfer of image(s)')
                 for img in self.imgloc:
+                    self.logger.info('Copying {0:s}'.format(img))
                     with open(img) as f:
                         # extract the filename from 'img'
                         head, fname = os.path.split(img)
-                        # get a filename of the form imgname_timestamp.iso
                         time_now = str(time.time()).split('.')
-                        fname = fname.split('.')[0] + '-{0:s}'.format(self.buildconfig['default']['arch']) + '-{0:s}.'.format(time_now[0]+time_now[1]) + fname.split('.')[1]
-                        self.logger.info('Copying {0:s}'.format(fname))
+                        # get a filename of the form imgname_timestamp.<ext>
+                        if len(fname.split('.')) == 2:
+                            fname = fname.split('.')[0] + '-{0:s}'.format(self.buildconfig['default']['arch']) + '-{0:s}.'.format(time_now[0]+time_now[1]) + fname.split('.')[1]
+                        # if no extension of the file (such as CHECKSUM)
+                        else:
+                            fname = fname.split('.')[0] + '-{0:s}'.format(self.buildconfig['default']['arch']) + '-{0:s}.'.format(time_now[0]+time_now[1])
+                            
                         try:
                             ftp.storbinary('STOR {0:s}'.format(fname), f)
                         except Exception as e:
@@ -132,7 +137,7 @@ class Transfer:
 
     def transfer(self):
         if self.staging.startswith('file:///'):
-            # bad hack to remove the trailing file:///
+            # bad hack to remove the prefix file:///
             status = self.transfer_local(self.staging.split('//')[1])
         else:
             status = self.transfer_ftp()

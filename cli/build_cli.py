@@ -56,12 +56,18 @@ class Cli:
             f.write('\n')
     
         buildconfig_json = json.dumps(buildconfig)
-        ksstr = util.get_kickstart(buildconfig)
+
+        isotype = buildconfig['default']['type']
+        if isotype != 'boot':
+            ksstr = util.get_kickstart(buildconfig)
+        else:
+            ksstr = None
 
         # task delegation
         from tasks import build
 
         try:
+            print 'Sending build task to worker'
             result_obj = build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
         except Exception as e:
             sys.exit('Error in communicating with Celery')

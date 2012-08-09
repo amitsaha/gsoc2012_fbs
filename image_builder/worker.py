@@ -236,6 +236,7 @@ class Worker():
             return None
 
         name = self.buildconfig['dvd']['name']
+        args.extend(['--name', name])
 
         ver = self.buildconfig['dvd']['version']
         args.extend(['--ver', ver])

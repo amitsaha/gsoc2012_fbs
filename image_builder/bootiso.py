@@ -46,6 +46,7 @@ class Bootiso():
         """ with help from  
         http://git.fedorahosted.org/git/?p=lorax.git;a=blob_plain;f=src/sbin/lorax;hb=HEAD
         """
+
         def sanitize_repo(repo):
             if repo.startswith("/"):
                 return "file://{0}".format(repo)
@@ -104,18 +105,18 @@ class Bootiso():
         # add the extra repositories and mirrors
         for n, (repo, mirror) in enumerate(zip(repositories[1:], mirrors[1:])):
             section = "lorax-extra-repo-{0:d}".format(n)
-            
-            # other repos
+            # side repo
             if n == len(mirrors)-2:
                 data = {"name": "lorax extra repo {0:d}".format(n),
                         "baseurl": repo,
                         "enabled": 1}
-            # side repo
+            # other repos
             else:
                 data = {"name": "lorax extra repo {0:d}".format(n),
                         "mirrorlist":mirror,
                         "#baseurl": repo,
                         "enabled": 1}
+
             c.add_section(section)
             map(lambda (key, value): c.set(section, key, value), data.items())
 
@@ -135,7 +136,6 @@ class Bootiso():
         """ Create yum base object and fire the ISO build 
         process
         """
-
         # create the temporary directory for lorax
         tempdir = tempfile.mkdtemp(prefix="lorax.", dir=tempfile.gettempdir())
 
@@ -145,20 +145,15 @@ class Bootiso():
         yumtempdir = os.path.join(tempdir, "yum")
         os.mkdir(yumtempdir)
 
-        yb = self.get_yum_base_object(installtree, self.repos, self.mirrors, self.proxy, yumtempdir)
-        
+        yb = self.get_yum_base_object(installtree, self.repos, self.mirrors, self.proxy, yumtempdir)        
         if yb is None:
             self.logger.error('Unable to create the yumbase object for creating boot ISO')
             shutil.rmtree(tempdir)
             raise Exception 
 
-        # run lorax
         lorax = pylorax.Lorax()
-
         # uses the default configuration file
         lorax.configure()
-        
         #fire
         self.logger.info('All set. Spawning boot iso creation using lorax.')
         lorax.run(yb, self.product, self.version, self.release, None, None, False, tempdir, self.outputdir, self.arch, None, False)
-

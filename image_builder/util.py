@@ -61,16 +61,10 @@ class Utilities:
 
         # retrieve the kickstart file name if any    
         if buildconfig.has_key('dvd'):
-            if not buildconfig['dvd']['config'].startswith(('http', 'https', 'ftp')):
-                head, ks_fname = os.path.split(buildconfig['dvd']['config'])
-            else:
-                ks_fname = buildconfig['dvd']['config']
+            ks_fname = buildconfig['dvd']['config']
         else:
             if buildconfig.has_key('live'):
-                if not buildconfig['live']['config'].startswith(('http', 'https', 'ftp')):
-                    head, ks_fname = os.path.split(buildconfig['live']['config'])
-                else:
-                    ks_fname = buildconfig['live']['config']
+                ks_fname = buildconfig['live']['config']
             else:
                 ks_fname = None
 
@@ -80,19 +74,15 @@ class Utilities:
                 # download and then JSON dump
                 import urllib2
                 try:
-                    print 'Reading remote KS file'
                     ksstr = json.dumps(urllib2.urlopen(ks_fname).read())
                 except Exception as e:
-                    print 'Error retrieving remote KS file'
                     ksstr = None
             else:
                 try:
-                    print 'Reading KS file'
-                    with open(ks_fname) as ks:
+                    with open(os.path.abspath(ks_fname)) as ks:
                         ksstr = json.dumps(ks.read())
                 except Exception as e:
                     ksstr = None
-                    print 'Error reading specified KS file'
         else:
             ksstr = None
 

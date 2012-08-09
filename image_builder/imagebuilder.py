@@ -162,7 +162,6 @@ class ImageBuilder:
         return ipaddr
     
     def build(self):
-
         # Worker object
         worker = Worker(self.buildconfig)
 

@@ -28,6 +28,8 @@ import ConfigParser
 import sys
 import os
 import json
+import glob
+import shutil
 
 from image_builder.imagebuilder import ImageBuilder
 from image_builder.util import Utilities
@@ -42,7 +44,17 @@ class CliBasic:
         util = Utilities()
 
         buildconfig = util.get_dict(self.buildconfig)
-        ksstr = util.get_kickstart(buildconfig)
+        isotype = buildconfig['default']['type']
+
+        if isotype != 'boot':
+            ksstr = util.get_kickstart(buildconfig)
+            #copy all KS files in the specified directory 
+            #of the KS file to /tmp
+            dirname, fname = os.path.split(os.path.abspath(buildconfig[isotype]['config']))
+            for ksfile in glob.glob('{0:s}/*.ks'.format(os.path.abspath(dirname))):
+                shutil.copyfile(ksfile,'/tmp/{0:s}'.format(os.path.split(ksfile)[1]))
+        else:
+            ksstr = None
 
         build = ImageBuilder(buildconfig, ksstr)
         logfile = build.getlogfile()
