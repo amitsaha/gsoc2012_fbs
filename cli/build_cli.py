@@ -41,6 +41,7 @@ class Cli:
         util = Utilities()
 
         buildconfig = util.get_dict(self.config)
+        release = buildconfig['default']['release']
 
         arch = buildconfig['default']['arch']
         #find an appropriate build node from nodes.conf
@@ -68,7 +69,8 @@ class Cli:
 
         try:
             print 'Sending build task to worker'
-            result_obj = build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
+            queue_name = 'fedora-{0:s}'.format(release)
+            result_obj = build.apply_async(args = [buildconfig_json, ksstr], queue = queue_name, serializer="json")
         except Exception as e:
             sys.exit('Error in communicating with Celery')
         else:

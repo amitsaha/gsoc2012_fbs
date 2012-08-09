@@ -39,8 +39,14 @@ import sys
 # config file
 deploy_conf = 'conf/deploy.conf'
 
-# workers
-workers = []
+items = []
+def flatten(mylist):
+    for item in mylist:
+        if type(item) is list:
+            flatten(item)
+        else:
+            items.append(item)
+    return items
 
 # Read configuration
 config = ConfigParser.SafeConfigParser()
@@ -50,24 +56,51 @@ except ConfigParser.ParsingError:
     print 'Error parsing {0:s}'.format(deploy_conf)
     sys.exit(1)
 
-
 try:
     # Read broker config
     i686_broker = config.get('broker','i686')
     x86_64_broker = config.get('broker','x86_64')
+
+    i686_broker_host = i686_broker.split('@')[1]
+    i686_broker_host = i686_broker_host.split('//')[0]
+
+    x86_64_broker_host = x86_64_broker.split('@')[1]
+    x86_64_broker_host = x86_64_broker_host.split('//')[0]
+
+    # read supported releases
+    releases = config.get('releases','releases')
+    releases = releases.split(',')
 
     # Read master config
     master = config.get('master','host')
     master_workdir = config.get('master','workdir')
 
     # Read worker config
-    workers_i686 = config.get('workers','i686')
-    workers_i686 = workers_i686.split(';')
-    workers_x86_64 = config.get('workers','x86_64')
-    workers_x86_64 = workers_x86_64.split(';')
-    worker_workdir = config.get('workers','workdir')
-    workers.extend(workers_i686)
-    workers.extend(workers_x86_64)
+    # dictionary of the form
+    # workers_dict[release] => nodes_dict
+    # nodes_dict[arch] = ['node1',...]
+    workers_dict = {}
+    for release in releases:
+        nodes_dict = {}
+        nodes = [] 
+        for arch in ['i686','x86_64']:
+            # if this arch is defined for this release
+            if config.has_option('workers-{0:s}'.format(release),arch):
+                nodes = config.get('workers-{0:s}'.format(release),arch).split(';')
+            else:
+                nodes = []
+
+            nodes_dict[arch] = nodes
+            worker_workdir = config.get('workers-{0:s}'.format(release),'workdir')
+
+        workers_dict[release] = nodes_dict
+
+    # form the list of workers
+    workers = []
+    for worker in workers_dict.values():
+        workers.extend(worker.values())
+
+    workers = flatten(workers)
 
     # Read SMTP config
     SMTP_SERVER = config.get('SMTP', 'server')
@@ -76,6 +109,7 @@ try:
     password = config.get('SMTP', 'password')
 
 except (ConfigParser.NoSectionError,ConfigParser.NoOptionError):
+
     print 'One or more of the required sections/options missing in conf/deploy.conf'
     sys.exit(1)
 
@@ -120,16 +154,20 @@ with open('conf/zdaemon_master.conf','w') as f:
     f.write('transcript {0:s}/zdaemon_webapp.log\n'.format(master_workdir))
     f.write('socket-name {0:s}/webapp.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
-
+    
 # setup zdaemon_celeryd.conf for celeryd
-with open('conf/zdaemon_worker.conf','w') as f:
-    f.write('<runner>\n')
-    logfile = '{0:s}/celery_task.log'.format(worker_workdir)
-    f.write('program /bin/celery -A tasks worker --loglevel=INFO --logfile={0:s}\n'.format(logfile))
-    f.write('directory {0:s}\n'.format(worker_workdir))
-    f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
-    f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
-    f.write('</runner>\n')
+# release specific
+# celeryconfig.py will take care of the architecture
+for release in releases:
+    fname = 'conf/zdaemon_worker_{0:s}.conf'.format(release)
+    with open(fname,'w') as f:
+        f.write('<runner>\n')
+        logfile = '{0:s}/celery_task.log'.format(worker_workdir)
+        f.write('program /bin/celery -A tasks worker -Q fedora-{1:s} --loglevel=INFO --logfile={0:s}\n'.format(logfile,release))
+        f.write('directory {0:s}\n'.format(worker_workdir))
+        f.write('transcript {0:s}/zdaemon_celeryd.log\n'.format(worker_workdir))
+        f.write('socket-name {0:s}/celeryd_worker.sock\n'.format(worker_workdir))    
+        f.write('</runner>\n')
 
 # setup zdaemon_monitor.conf for build monitor
 with open('conf/zdaemon_monitor.conf','w') as f:
@@ -191,7 +229,8 @@ def copy_files_master():
     conf = os.path.abspath('conf')
     zdaemon = '{0:s}/zdaemon_master.conf'.format(conf)
 
-    # create the work dirs if they do not exist
+    # clean and create the work dirs
+    run('rm -rf {0:s}'.format(os.path.abspath(master_workdir)))
     run('mkdir -p {0:s}'.format(os.path.abspath(master_workdir)))
 
     put(setuppy, os.path.abspath(master_workdir), use_sudo=False)
@@ -215,26 +254,33 @@ def copy_files_workers():
     celeryconfig_i686 = '{0:s}/celeryconfig_i686.py'.format(conf)
     celeryconfig_x86_64 = '{0:s}/celeryconfig_x86_64.py'.format(conf)
     celeryconfig = '{0:s}/celeryconfig.py'.format(worker_workdir)
-    zdaemon_worker = '{0:s}/zdaemon_worker.conf'.format(conf)
+    zdaemon_worker = '{0:s}/zdaemon_worker.conf'.format(worker_workdir)
     zdaemon_monitor = '{0:s}/zdaemon_monitor.conf'.format(conf)
     zdaemon_flower = '{0:s}/zdaemon_flower.conf'.format(conf)
     
-    # create the work dirs if they do not exist
+    # clean and create the work dirs
+    run('rm -rf {0:s}'.format(os.path.abspath(worker_workdir)))
     run('mkdir -p {0:s}'.format(os.path.abspath(worker_workdir)))
     
     # copy image_builder,  setup.py,  tasks.py
     put(setuppy, os.path.abspath(worker_workdir), use_sudo=True)
     put(taskspy, os.path.abspath(worker_workdir), use_sudo=True)
     put(image_builder, os.path.abspath(worker_workdir), use_sudo=True)
-    put(zdaemon_worker, os.path.abspath(worker_workdir), use_sudo=True)
     put(zdaemon_monitor, os.path.abspath(worker_workdir), use_sudo=True)
     put(zdaemon_flower, os.path.abspath(worker_workdir), use_sudo=True)
 
-    if env.host_string in workers_i686:
-        put(celeryconfig_i686, celeryconfig, use_sudo=True)
+    # check which releases this worker supports and 
+    # copy the appropriate celeryconfig and zdaemon_worker 
+    #conf file
+    for release in releases:
+        if env.host_string in workers_dict[release]['i686']:
+            put(celeryconfig_i686, celeryconfig, use_sudo=True)
+            zdaemon_worker_release = '{0:s}/zdaemon_worker_{1:s}.conf'.format(conf,release)
+        if env.host_string in workers_dict[release]['x86_64']:
+            put(celeryconfig_x86_64, celeryconfig, use_sudo=True)
+            zdaemon_worker_release = '{0:s}/zdaemon_worker_{1:s}.conf'.format(conf,release)
 
-    if env.host_string in workers_x86_64:
-        put(celeryconfig_x86_64, celeryconfig, use_sudo=True)
+    put(zdaemon_worker_release, zdaemon_worker, use_sudo=True)
 
 @task
 @hosts(master)
@@ -252,7 +298,10 @@ def deploy_workers():
 
     with cd(worker_workdir):
         run('python setup.py install')
-        run('service rabbitmq-server start')
+        
+        if env.host_string.split('@')[1] == i686_broker_host or env.host_string.split('@')[1] == x86_64_broker_host:
+            run('service rabbitmq-server start')
+
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_monitor.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_worker.conf start'.format(worker_workdir))
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_flower.conf start'.format(worker_workdir))
