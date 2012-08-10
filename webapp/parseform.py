@@ -30,6 +30,8 @@ def parse_data(app, request, form):
         f.write('type={0:s}\n'.format(image))
         arch=form.arch.data
         f.write('arch={0:s}\n'.format(arch))
+        release=form.release.data
+        f.write('release={0:s}\n'.format(release))
         staging=form.staging.data
         f.write('staging={0:s}\n'.format(staging))
         email=form.email.data
@@ -39,9 +41,8 @@ def parse_data(app, request, form):
             f.write('[boot]\n')
             product=form.product.data
             f.write('product={0:s}\n'.format(product))
-            release=form.release.data
             f.write('release={0:s}\n'.format(release))
-            version=form.version.data
+            version=form.boot_version.data
             f.write('version={0:s}\n'.format(version))
             baseurl=form.baseurl.data
             gold=form.gold.data
@@ -70,17 +71,20 @@ def parse_data(app, request, form):
             updates_testing_url='{0:s}/updates/testing/{1:s}/{2:s}'.format(baseurl,release,arch)
 
             #form the mirror url's
-            mirror_main_url = 'https://mirrors.fedoraproject.org/metalink?repo=fedora-{0:s}&arch={1:s}'.format(release,arch)
-            mirror_updates_url = 'https://mirrors.fedoraproject.org/metalink?repo=updates-released-f{0:s}&arch={1:s}'.format(release,arch)   
-            mirror_updates_testing_url = 'https://mirrors.fedoraproject.org/metalink?repo=updates-testing-f{0:s}&arch={1:s}'.format(release,arch)   
+            if release != 'rawhide':
+                mirror_main_url = 'http://mirrors.fedoraproject.org/metalink?repo=fedora-{0:s}&arch={1:s}'.format(release,arch)
+            else:
+                mirror_main_url = 'http://mirrors.fedoraproject.org/metalink?repo={0:s}&arch={1:s}'.format(release,arch)             
+            mirror_updates_url = 'http://mirrors.fedoraproject.org/metalink?repo=updates-released-f{0:s}&arch={1:s}'.format(release,arch)   
+            mirror_updates_testing_url = 'http://mirrors.fedoraproject.org/metalink?repo=updates-testing-f{0:s}&arch={1:s}'.format(release,arch)   
 
             #write the URLs
             f.write('{0:s}_url={1:s}\n'.format(release,main_url))
             f.write('{0:s}_mirror={1:s}\n'.format(release,mirror_main_url))
-            if updates=='1':
+            if updates=='1' and gold:
                 f.write('{0:s}-updates_url={1:s}\n'.format(release,updates_url))
                 f.write('{0:s}-updates_mirror={1:s}\n'.format(release,mirror_updates_url))
-            if updates_testing=='1':
+            if updates_testing=='1' and gold:
                 f.write('{0:s}-updates-testing_url={1:s}\n'.format(release,updates_testing_url))
                 f.write('{0:s}-updates-testing_mirror={1:s}\n'.format(release,mirror_updates_testing_url))
 
@@ -105,8 +109,7 @@ def parse_data(app, request, form):
             f.write('[dvd]\n')
             product=form.product.data
             f.write('name={0:s}\n'.format(product))
-            version=form.version.data
-            f.write('version={0:s}\n'.format(version))
+            f.write('version={0:s}\n'.format(release))
             flavor=form.flavor.data
             f.write('flavor={0:s}\n'.format(flavor))
 
@@ -141,7 +144,7 @@ def parse_data(app, request, form):
             if file:
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                f.write('config=data/kickstarts/{0:s}\n'.format(filename))
+                f.write('config={0:s}\n'.format(os.path.join(app.config['UPLOAD_FOLDER'], filename)))
             else:
                 # If KS URL specified
                 ksurl = form.remoteconfig_dvd.data
@@ -156,7 +159,6 @@ def parse_data(app, request, form):
             f.write('title={0:s}\n'.format(title))
             product=form.product.data
             f.write('product={0:s}\n'.format(product))
-            release=form.release.data
             f.write('releasever={0:s}\n'.format(release))
 
             nvr=form.nvr_live.data
@@ -180,7 +182,7 @@ def parse_data(app, request, form):
             if file:
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                f.write('config=data/kickstarts/{0:s}\n'.format(filename))
+                f.write('config={0:s}\n'.format(os.path.join(app.config['UPLOAD_FOLDER'], filename)))
 
             # If KS URL specified
             else:

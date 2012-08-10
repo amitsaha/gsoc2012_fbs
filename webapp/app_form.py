@@ -30,8 +30,8 @@ class BuildConfigForm(Form):
     staging=TextField(u'Staging FTP URL (No ftp://)', [validators.required()])
     email = TextField('Email Address', [validators.Email()])
     product=SelectField(u'Product',choices=[('Fedora','Fedora')])
-    release=SelectField(u'Release',choices=[('17','17'),('18','18'),('rawhide','rawhide')])
-    version=SelectField(u'Version',choices=[('17','17'),('18','18'),('rawhide','rawhide')])
+    release=SelectField(u'Release',choices=[('17','17'),('rawhide','rawhide')])
+    boot_version=TextField(u'Version', [validators.required()])
     baseurl = TextField(u'Base URL of the repository',[validators.required()])
     proxy = TextField(u'Proxy URL')
     gold = BooleanField(u'Gold?')
@@ -62,11 +62,15 @@ class BuildConfigForm(Form):
         if form.image.data == 'live':
             if request.files['config_live']:
                 form.remoteconfig_live.validators = []
+            
+            form.boot_version.validators = []
             form.remoteconfig_dvd.validators = []
 
         if form.image.data == 'dvd':
             if request.files['config_dvd']:
                 form.remoteconfig_dvd.validators = []
+            
+            form.boot_version.validators = []
             form.remoteconfig_live.validators = []
 
         if form.image.data == 'boot' or form.image.data == 'live':

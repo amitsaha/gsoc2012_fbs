@@ -32,6 +32,21 @@ from parseform import parse_data
 
 # Flask Application
 app = Flask(__name__)
+
+# cleanup data to start with and
+# create data/config and data/kickstarts
+if not os.path.exists('data/config'):
+    os.makedirs('data/config')
+else:
+    shutil.rmtree('data/config')
+    os.makedirs('data/config')
+
+if not os.path.exists('data/kickstarts'):
+    os.makedirs('data/kickstarts')
+else:
+    shutil.rmtree('data/kickstarts')
+    os.makedirs('data/kickstarts')
+    
 app.config['UPLOAD_FOLDER'] = 'data/kickstarts/'
 
 # Entry point for the Web application
@@ -120,7 +135,9 @@ def delegate():
     from tasks import build
 
     try:
-        build.apply_async(args = [buildconfig_json, ksstr], serializer="json")
+        release = buildconfig['default']['release']
+        queue_name = 'fedora-{0:s}'.format(release)
+        build.apply_async(args = [buildconfig_json, ksstr], queue = queue_name, serializer="json")
     except Exception as e:
         # if there is an error in submitting job to celery
         # we save this somewhere and retry (TODO)
@@ -144,19 +161,6 @@ def delegate():
         return
 
 if __name__ == "__main__":
-    # cleanup data to start with and
-    # create data/config and data/kickstarts
-    if not os.path.exists('data/config'):
-        os.makedirs('data/config')
-    else:
-        shutil.rmtree('data/config')
-        os.makedirs('data/config')
-
-    if not os.path.exists('data/kickstarts'):
-        os.makedirs('data/kickstarts')
-    else:
-        shutil.rmtree('data/kickstarts')
-        os.makedirs('data/kickstarts')
 
     # start webapp
     app.run(host='0.0.0.0',debug=True)

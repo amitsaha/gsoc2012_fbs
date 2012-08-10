@@ -296,6 +296,13 @@ def deploy_master():
 def deploy_workers():
     """ Deploy the workers. Basically start celeryd"""
 
+    # clean up /tmp/celery_hijack, if it exists
+    # used as a 'lock' file so that the celery
+    # logger is not unhijacked multiple times
+    # in a single celery session
+    if os.path.exists('/tmp/celery_hijack'):
+        run('rm /tmp/celery_hijack')
+
     with cd(worker_workdir):
         run('python setup.py install')
         

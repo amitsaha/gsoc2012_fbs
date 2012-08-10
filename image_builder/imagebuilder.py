@@ -47,9 +47,16 @@ class ImageBuilder:
         self.email = self.buildconfig['default']['email']
         self.logger = logging.getLogger('imagebuilder')
         self.logfile = self.initlog()
+
         # for celery
-        if not os.environ.has_key('LOCAL_MODE'):
+        # do not let celery hijack the application's logger when
+        # not running in local mode, and
+        # hasn't already been done (for eg, for a single celery session
+        # we don't do it multiple times)
+        if not os.environ.has_key('LOCAL_MODE') and not os.path.exists('/tmp/celery_hijack'):
             worker_process_init.connect(self.initlog())
+            open('/tmp/celery_hijack','w')
+
         self.monitor = self.checkmonitor()
         self.notify_email_init()
         
