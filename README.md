@@ -1,7 +1,15 @@
 gsoc2012_fbs
 ============
 
-Projet details: [On-Demand Fedora Build Service](http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001). See HOWTO for some draft usage instructions.
+Projet details: [On-Demand Fedora Build Service](http://www.google-melange.com/gsoc/project/google/gsoc2012/amitsaha/24001).
+
+
+DOCUMENTATION
+-------------
+
++ Read the documentation on [Read the docs] (http://on-demand-fedora-build-service.readthedocs.org/en/latest/)
++ Download a PDF of the latest documentatio [here] (http://readthedocs.org/projects/on-demand-fedora-build-service/downloads/)
+
 
 STATUS
 ------
