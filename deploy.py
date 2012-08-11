@@ -21,12 +21,9 @@
 
 """
 This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
-to deploy image_builder. See HOWTO here: 
-https://github.com/amitsaha/gsoc2012_fbs/blob/master/HOWTO
+to deploy On-Demand Fedora Build Service.
+See doc/ for usage guidelines.
 
-TODO: Too many globals being used. The way out is to use a Class
-but to use it with Fabric involves a little convolution. Doable.
-Will do.
 """
 
 from fabric.api import task, run, hosts, cd, env, local
@@ -190,9 +187,8 @@ with open('conf/zdaemon_flower.conf','w') as f:
 
 @task
 @hosts(master)
-def install_packages_master():
-    """ Install dependencies on the 'master' where the
-    web application will run
+def install_packages_webapp():
+    """ Install dependencies for the web application
     """
 
     deps = 'python-flask python-flask-wtf python-wtforms python-amqplib rabbitmq-server python-zdaemon'
@@ -218,9 +214,8 @@ def install_packages_workers():
     
 @task
 @hosts(master)
-def copy_files_master():
-    """ Copy the files to the 'master' from which the web 
-    applicaiton will be serving requests
+def copy_files_webapp():
+    """ Copy files to the web application host
     """
 
     webapp = os.path.abspath('webapp')
@@ -243,9 +238,8 @@ def copy_files_master():
 @task
 @hosts(workers)
 def copy_files_workers():
-    """ Copy the files to the workers where the build tasks
-    will be performed
-    """
+    """ Copy the files to the workers """
+
     webapp = os.path.abspath('webapp')
     taskspy = '{0:s}/tasks.py'.format(webapp)
     setuppy = os.path.abspath('setup.py')
@@ -284,8 +278,8 @@ def copy_files_workers():
 
 @task
 @hosts(master)
-def deploy_master():
-    """ Deploy the web application"""
+def deploy_webapp():
+    """ Deploy the web application (and enable REST API)"""
 
     with cd(master_workdir):
         run('sudo python setup.py install')
@@ -294,7 +288,7 @@ def deploy_master():
 @task
 @hosts(workers)
 def deploy_workers():
-    """ Deploy the workers. Basically start celeryd"""
+    """ Deploy the workers """
 
     # clean up /tmp/celery_hijack, if it exists
     # used as a 'lock' file so that the celery
@@ -320,8 +314,25 @@ def deploy_workers():
     run('cp /usr/share/spin-kickstarts/*.ks /tmp/')
 
 @task
+def deploy_local():
+    """ Deployment in local mode """
+
+    # image building tools/misc.
+    deps = 'koji lorax livecd-tools pungi pykickstart spin-kickstarts'
+    local('sudo yum --enablerepo=updates --assumeyes install {0:s}'.format(deps)) 
+
+    # image builder package instalaltion
+    local('sudo python setup.py install')
+
+    # copy the /usr/share/spin-kickstarts to /tmp
+    # for Live and DVD image building.
+    # Hence the supplied KS file need not be ksflattened
+    local('sudo cp /usr/share/spin-kickstarts/*.ks /tmp/')
+
+
+@task
 def setup_cli():
-    """ Setup for using the CLI """
+    """ Deployment for using the command line client in distributed mode """
     deps = 'python-amqplib rabbitmq-server'
     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
     local('sudo python setup.py install')
@@ -330,10 +341,11 @@ def setup_cli():
     run('sudo yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
     run('sudo pip-python install celery')
 
-@task
-def run_tests():
-    """ Run tests in testing/ """
-    deps = 'pytest python-mock'
-    local('sudo yum --assumeyes install {0:s}'.format(deps)) 
-    local('sudo python setup.py install')
-    local('py.test')
+
+# @task
+# def run_tests():
+#     """ Run tests in testing/ """
+#     deps = 'pytest python-mock'
+#     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
+#     local('sudo python setup.py install')
+#     local('py.test')

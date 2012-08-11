@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Getting Started &mdash; On-Demand Fedora Build Service 1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="On-Demand Fedora Build Service 1 documentation" href="index.html" />
+    <link rel="next" title="Internals" href="internals.html" />
+    <link rel="prev" title="Welcome to Fedora Build Service’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="internals.html" title="Internals"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Fedora Build Service’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">On-Demand Fedora Build Service 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="getting-started">
+<h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
+<p>This document aims to get you started with using and deploying the
+<strong>On-Demand Fedora Build Service</strong>, an effort to make Fedora image
+building easier. Using this service you can make <em>boot iso, DVD iso</em>
+and <em>live images</em> of <a class="reference external" href="http://fedoraproject.org">Fedora</a> Linux.</p>
+<p>The service can be used in two modes:</p>
+<ol class="arabic simple">
+<li>Local mode</li>
+<li>Distributed mode</li>
+</ol>
+<p>In <em>local mode</em>, all the work is done on the local machine, whereas in
+<em>distributed mode</em>, the build job is distributed across multiple build
+<em>nodes</em> and building images for multiple Fedora releases and
+architecture is supported.</p>
+<div class="section" id="local-mode">
+<h2>Local Mode<a class="headerlink" href="#local-mode" title="Permalink to this headline">¶</a></h2>
+<p>The <em>local mode</em> involves minimum setup requirements and is easy to get
+started with. If you intend to deploy the service across multiple
+nodes, the <em>local mode</em> is a good way to smoke test the working of the
+service. Let&#8217;s get staretd:</p>
+<ol class="arabic simple">
+<li>Clone the source from the git <a class="reference external" href="http://github.com/amitsaha/gsoc2012_fbs">repository</a> using <tt class="docutils literal"><span class="pre">$</span> <span class="pre">git</span> <span class="pre">clone</span> <span class="pre">git://github.com/amitsaha/gsoc2012_fbs.git</span></tt></li>
+<li>Install <a class="reference external" href="http://docs.fabfile.org/en/1.4.3/index.html">fabric</a> using <tt class="docutils literal"><span class="pre">$sudo</span> <span class="pre">yum</span> <span class="pre">install</span> <span class="pre">fabric</span></tt></li>
+<li>Navigate to the cloned source repository (<tt class="docutils literal"><span class="pre">gsoc2012_fbs</span></tt>). You will see a <em>fabric fabfile</em>, <tt class="docutils literal"><span class="pre">fabfile.py</span></tt> (basically a symbolic link to <tt class="docutils literal"><span class="pre">deploy.py</span></tt> - the real script)</li>
+</ol>
+<p>To setup everything you need for running the image building service
+in local mode, excute <tt class="docutils literal"><span class="pre">$</span> <span class="pre">fab</span> <span class="pre">deploy_local</span></tt>, which should ask for your
+<tt class="docutils literal"><span class="pre">sudo</span></tt> password as it installs the packages needed for running the
+image building service, installs the package, <tt class="docutils literal"><span class="pre">image_builder</span></tt> and
+another setup requirement.</p>
+<p>Now you are ready to using the image building service. Navigate to the
+<tt class="docutils literal"><span class="pre">cli/</span></tt> directory in the source tree. The file
+<tt class="docutils literal"><span class="pre">`build_cli_basic.py`</span></tt> is a command line client to build a Fedora
+image as per your specifications. Here is a quick overview of how to
+specify a <em>boot iso</em>:</p>
+<div class="highlight-python"><pre>[DEFAULT]
+type=boot
+arch=x86_64
+release=17
+staging=10.0.0.27
+#staging=file:///tmp/staging
+email=amitsaha.in@gmail.com
+
+[boot]
+product=fedora
+release=17
+version=1
+updates=0
+updates-testing=0
+17_url=http://download.fedoraproject.org/releases/17/Everything/x86_64/os
+17_mirror=http://mirrors.fedoraproject.org/metalink?repo=fedora-17&amp;arch=x86_64
+#17-updates_url=http://download.fedoraproject.org/updates/17/i386
+#17-updates_mirror=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f17&amp;arch=i386
+proxy=
+nvr=package1;packag2;
+bid=package3;packag4
+outdir=/tmp/lorax_op
+workdir=/tmp/lorax_work</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">[DEFAULT]</span></tt> section of the configuration contains the following
+information:</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">type</span></tt></dt>
+<dd>Type of image to be built, has to be one of <tt class="docutils literal"><span class="pre">boot,</span> <span class="pre">dvd,</span> <span class="pre">live</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">arch</span></tt></dt>
+<dd>Architecture of the image. Note that, if you are on a <tt class="docutils literal"><span class="pre">i686</span></tt>
+node, you will only be able to build an image of that type. Valid
+values are <tt class="docutils literal"><span class="pre">i686,</span> <span class="pre">x86_64</span></tt></dd>
+<dt><tt class="docutils literal"><span class="pre">release</span></tt></dt>
+<dd>The Fedora release of the image to be built. It should be the same
+as the release of fedora you are running, else unexpected things
+may happen.</dd>
+<dt><tt class="docutils literal"><span class="pre">staging</span></tt></dt>
+<dd>This is where your built images will be stored once
+completed. There are two options: local file system (specified via
+<tt class="docutils literal"><span class="pre">`file:///foo/bar`</span></tt>) or a FTP server with anonymous access
+specified via the IP address of the server</dd>
+<dt><tt class="docutils literal"><span class="pre">email</span></tt></dt>
+<dd>An email address for image building notification. This isn&#8217;t active
+in local mode (although you can activate it using a simple change
+to the client code, <tt class="docutils literal"><span class="pre">build_cli_basic.py`</span></tt>, which we learn more
+about a little later).</dd>
+</dl>
+<p>The <tt class="docutils literal"><span class="pre">[boot]</span></tt> section specifies the options which are specific to
+<a class="reference external" href="http://git.fedorahosted.org/cgit/lorax.git/">lorax</a>, Fedora&#8217;s image creation tool. The <tt class="docutils literal"><span class="pre">product</span></tt> option specifies
+the name of the Boot ISO being created, usually <tt class="docutils literal"><span class="pre">fedora</span></tt>. The
+<tt class="docutils literal"><span class="pre">release</span></tt> option is the same as above. The <tt class="docutils literal"><span class="pre">version</span></tt> name
+specifies the version of the ISO being built.</p>
+<p>The next few options describe the <tt class="docutils literal"><span class="pre">repository</span></tt> and <tt class="docutils literal"><span class="pre">mirrorlists</span></tt>.
+The <tt class="docutils literal"><span class="pre">updates</span></tt> and <tt class="docutils literal"><span class="pre">updates-testing</span></tt> repository can be
+enabled/disabled by setting them to <tt class="docutils literal"><span class="pre">1</span></tt> or <tt class="docutils literal"><span class="pre">0</span></tt>,
+respectively. The release repository and mirror is specified via the
+options <tt class="docutils literal"><span class="pre">{release}_url</span></tt> and <tt class="docutils literal"><span class="pre">{release}_mirror</span></tt> (where <tt class="docutils literal"><span class="pre">release</span></tt>
+is the above specified value). If you have enabled any or both of
+<tt class="docutils literal"><span class="pre">updates</span></tt> or <tt class="docutils literal"><span class="pre">updates-testing</span></tt>, you have to specify the repository
+and mirror list for them as well. Incase you have a <tt class="docutils literal"><span class="pre">proxy</span></tt> setup
+for your repositories, specify it here (<strong>untested</strong>).</p>
+<p>Incase you want to include packages which are not yet there in any of
+the repositories, you may specify them via their <tt class="docutils literal"><span class="pre">NVR</span> <span class="pre">strings</span></tt> or
+<tt class="docutils literal"><span class="pre">Koji</span> <span class="pre">build</span> <span class="pre">IDs</span></tt> using the next two options: <tt class="docutils literal"><span class="pre">nvr</span></tt> and <tt class="docutils literal"><span class="pre">bid</span></tt>. If you don&#8217;t have any
+such requirements, just leave them blank. The packages will be pulled
+in from <a class="reference external" href="http://koji.fedoraproject.org/koji/">Koji</a> and included in your image.</p>
+<p>Finally, <tt class="docutils literal"><span class="pre">lorax</span></tt> requires an output directory where it places the
+image it builds. You can specify it using <tt class="docutils literal"><span class="pre">outdir</span></tt>. The <tt class="docutils literal"><span class="pre">workdir</span></tt>
+option is used to specify a directory which will be used by the image
+building code to download the extra packages and create a side
+repository (if any).</p>
+<p>Now, you may save the above specification in a file called,
+<tt class="docutils literal"><span class="pre">boot_imagebuild.conf</span></tt>. Next, execute the <tt class="docutils literal"><span class="pre">build_cli_basic.py</span></tt>
+script using <tt class="docutils literal"><span class="pre">$sudo</span> <span class="pre">python</span> <span class="pre">build_cli_basic.py</span>
+<span class="pre">/location/for/boot_imagebuild.conf</span></tt>, which should trigger the build
+process:</p>
+<div class="highlight-python"><pre>Initiating Build Process. See /tmp/imagebuild_13446647457.log for progress
+checking for root privileges
+checking yum base object
+setting up build architecture
+setting up build parameters
+installing runtime packages
+..</pre>
+</div>
+<p>If you check the specified log file, you should see messages like:</p>
+<div class="highlight-python"><pre>2012-08-11 16:07:58,798 - Registered a new Image Build request from amitsaha.in@gmail.com
+2012-08-11 16:07:58,798 - Image type:: boot
+2012-08-11 16:07:58,800 - Starting the Image Build Process
+2012-08-11 16:07:58,800 - Creating side repository
+2012-08-11 16:07:58,803 - Downloading packages for Side repository
+2012-08-11 16:08:17,350 - Side repository created
+2012-08-11 16:08:17,353 - All set. Spawning boot iso creation using lorax.
+2012-08-11 16:28:39,101 - Boot ISO built succesfully
+2012-08-11 16:28:39,118 - Image building process complete
+2012-08-11 16:28:39,118 - Image successfully created. Transferring to staging.
+2012-08-11 16:28:39,118 - Initiating local transfer of image(s) to /tmp/staging
+2012-08-11 16:28:43,238 - Initiating local transfer of logs to /tmp/staging
+2012-08-11 16:28:43,895 - Image(s) and logs available at file:///tmp/staging</pre>
+</div>
+<p>The <tt class="docutils literal"><span class="pre">boot_imagebuild.conf</span></tt> file that was used had the following
+contents:</p>
+<div class="highlight-python"><pre>[DEFAULT]
+type=boot
+arch=x86_64
+release=17
+#staging=10.0.0.27
+staging=file:///tmp/staging
+email=amitsaha.in@gmail.com
+[boot]
+product=fedora
+release=17
+version=17
+updates=0
+updates-testing=0
+17_url=http://download.fedoraproject.org/releases/17/Everything/x86_64/os
+17_mirror=http://mirrors.fedoraproject.org/metalink?repo=fedora-17&amp;arch=x86_64
+#17-updates_url=http://download.fedoraproject.org/updates/17/i386
+#17-updates_mirror=https://mirrors.fedoraproject.org/metalink?repo=updates-released-f17&amp;arch=i386
+proxy=
+nvr=wget-1.13.4-4.fc17
+bid=
+outdir=/tmp/lorax_op
+workdir=/tmp/lorax_work</pre>
+</div>
+<p>If you compare the logging messages and the image build specification,
+you will see that I have specified an extra package to be pulled in
+from Koji using a NVR string and hence the messages regarding
+side-repository creation.</p>
+<p>Similarly, you can also build <tt class="docutils literal"><span class="pre">DVD</span></tt> and <tt class="docutils literal"><span class="pre">Live</span> <span class="pre">images</span></tt> using this
+command line client and the appropriate specifications. For sample
+specification for these, see the <tt class="docutils literal"><span class="pre">conf/</span></tt> directory in the checked
+out sources.</p>
+<p>It should be kept in mind that <strong>all</strong> the options must be specified
+in the configuration files as in the samples given. It is therefore
+recommended that you use one of the sample configuration files to
+build your own. A simple configuration file generator will soon be
+made available.</p>
+</div>
+<div class="section" id="distributed-mode">
+<h2>Distributed Mode<a class="headerlink" href="#distributed-mode" title="Permalink to this headline">¶</a></h2>
+<p>The distributed mode enables deployment of the code on multiple nodes
+and dare we say, in production. The advantages of this mode include
+support for building images for different Fedora releases and
+architecture. Also, your local machine will not be hogged with
+building images. Let&#8217;s see how we can deploy the build service in this
+mode.</p>
+<div class="section" id="deployment-configuration">
+<h3>Deployment Configuration<a class="headerlink" href="#deployment-configuration" title="Permalink to this headline">¶</a></h3>
+<p>First, the deployment configuration is specified via the file
+<tt class="docutils literal"><span class="pre">conf/deploy.conf</span></tt>:</p>
+<div class="highlight-python"><pre>[broker]
+i686="amqp://guest@10.0.0.30//"
+x86_64="amqp://guest@10.0.0.27//"
+
+[releases]
+releases=17,rawhide
+
+[master]
+host=gene@localhost
+workdir=/tmp/imagebuilder_webapp
+
+[workers-17]
+i686=root@10.0.0.30
+x86_64=root@10.0.0.27
+workdir=/tmp/imagebuilder_worker
+
+[workers-rawhide]
+i686=root@10.0.0.37
+x86_64=root@10.0.0.43
+workdir=/tmp/imagebuilder_worker
+
+[SMTP]
+#replace these with appropriate credentials
+#single quotes needed
+server='smtp.gmail.com'
+port='587'
+login='bot@gmail.com'
+password='f00bar'</pre>
+</div>
+<p>Let us understand this configuration file&#8217;s sections and options.</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">broker</span></tt></dt>
+<dd>The <tt class="docutils literal"><span class="pre">url</span></tt> of the message broker is specified here. This is used
+by <a class="reference external" href="http://docs.celeryproject.org/en/latest/index.html">Celery</a>, which is used to distribute the build jobs. As
+you can see, <a class="reference external" href="http://www.rabbitmq.com/">RabbitMQ</a> is used as a broker in this
+case. Currently, two brokers are used: one for the <tt class="docutils literal"><span class="pre">i686</span></tt> build
+nodes and another for <tt class="docutils literal"><span class="pre">x86_64</span></tt> build nodes. The
+assumption is that these URLs will point to one of the
+appropriate worker nodes specified later. For example, the
+<tt class="docutils literal"><span class="pre">i686</span></tt> broker URL should point to a <tt class="docutils literal"><span class="pre">i686</span></tt> worker node
+and similarly for the <tt class="docutils literal"><span class="pre">x86_64</span></tt> URL.</dd>
+<dt><tt class="docutils literal"><span class="pre">releases</span></tt></dt>
+<dd>Specify the supported releases here.</dd>
+<dt><tt class="docutils literal"><span class="pre">master</span></tt></dt>
+<dd>This section specifies the <tt class="docutils literal"><span class="pre">user&#64;host</span></tt> string (in the <tt class="docutils literal"><span class="pre">host</span></tt>
+option) of the node which will be the <em>master</em> node of the build
+service. This node will host the Web application that users of
+this service will use to submit build requests. SSH server should
+be running on this server to enable deployment and firewall rules
+appropriately set to allow incoming connections on
+port 5000. The <tt class="docutils literal"><span class="pre">workdir</span></tt> option specifies the directory where
+the web application will be hosted from.</dd>
+</dl>
+<p>Next, the build node configurations are specified. Depending on the
+number of supported releases, there will be one or more sections - one
+for each supported release, with section names of the form
+<tt class="docutils literal"><span class="pre">worker-{release}</span></tt>, where <tt class="docutils literal"><span class="pre">release</span></tt> is one of the values
+specified in <tt class="docutils literal"><span class="pre">releases</span></tt> above.</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">worker-{release}</span></tt></dt>
+<dd>This section should specify the <tt class="docutils literal"><span class="pre">root&#64;host</span></tt> strings for workers
+supporting <tt class="docutils literal"><span class="pre">i686</span></tt> and <tt class="docutils literal"><span class="pre">x86_64</span></tt> image building using the
+appropriate options. Each worker section should have <em>both</em>
+specified. Multiple <tt class="docutils literal"><span class="pre">user&#64;host</span></tt> strings should be seperated
+via a ; (semicolon). The <tt class="docutils literal"><span class="pre">workdir</span></tt> option specifies the directory where
+the deployment of the build service will take place from.</dd>
+<dt><tt class="docutils literal"><span class="pre">SMTP</span></tt></dt>
+<dd>This section specifies the SMTP server configuration which will be
+used for sending notification emails to the job requester.</dd>
+</dl>
+</div>
+<div class="section" id="deployment-using-fabric">
+<h3>Deployment using Fabric<a class="headerlink" href="#deployment-using-fabric" title="Permalink to this headline">¶</a></h3>
+<p>Once this configuration file is ready, the fabric script
+<tt class="docutils literal"><span class="pre">fabfile.py</span></tt> will be used to deploy the service. Let us see the
+tasks that are currently available in the script (assuming you are in
+the source root):</p>
+<div class="highlight-python"><pre>$ fab --list
+
+This is a fabfile (http://docs.fabfile.org/en/1.4.2/index.html)
+to deploy On-Demand Fedora Build Service.
+See doc/ for usage guidelines.
+
+Available commands:
+
+    copy_files_webapp         Copy files to the web application host
+    copy_files_workers        Copy the files to the workers
+    deploy_local              Deployment in local mode
+    deploy_webapp             Deploy the web application (and enable REST API)
+    deploy_workers            Deploy the workers
+    install_packages_webapp   Install dependencies for the web application
+    install_packages_workers  Install dependencies on the workers
+    setup_cli                 Deployment for using the command line client in distributed mode</pre>
+</div>
+</div>
+<div class="section" id="deploying-the-workers">
+<h3>Deploying the Workers<a class="headerlink" href="#deploying-the-workers" title="Permalink to this headline">¶</a></h3>
+<p>First, let us deploy the workers. We shall first copy the appropriate
+files to the worker, install the necessary packages and then finally
+start the worker processes (root access to all the workers is
+required). We run the corresponding taks via <tt class="docutils literal"><span class="pre">fabric</span></tt>:</p>
+<div class="highlight-python"><pre>$ fab copy_files_workers install_packages_workers deploy_workers
+[root@10.0.0.37] Executing task 'copy_files_workers'
+[root@10.0.0.37] run: rm -rf /tmp/imagebuilder_worker
+[root@10.0.0.37] Login password for 'root':
+..
+..</pre>
+</div>
+<p>It will take a while before all the taks are completed and provided
+there are no errors, your workers should now be up and ready to
+build. Assuming that the above deployment completed without any
+errors, you can do a simple check to verify whether the workers are up
+and running using <a class="reference external" href="https://github.com/mher/flower">flower</a> (a web-based tool for monitoring
+celery workers.). In your browser, open the URL <tt class="docutils literal"><span class="pre">http://&lt;ip&gt;:8008</span></tt>,
+where <tt class="docutils literal"><span class="pre">&lt;ip&gt;</span></tt> can be any of the worker node IPs. If the IP address
+you chose is one of the <tt class="docutils literal"><span class="pre">i686</span></tt> nodes&#8217; IPs, then you should see a
+webpage showing <em>all</em> the <tt class="docutils literal"><span class="pre">i686</span></tt> nodes you specified. For example,
+the following screenshot shows a sample flower interface:</p>
+<a class="reference internal image-reference" href="_images/flower.png"><img alt="_images/flower.png" class="align-center" src="_images/flower.png" style="width: 911.7px; height: 367.2px;" /></a>
+<p>If you do not see <em>all</em> of the nodes you specified for the specified
+architecture, something is wrong, and should be investigated.</p>
+<p>Now that the workers are deployed, let us now explore the options
+currently available for submitting an image build task.</p>
+</div>
+<div class="section" id="web-based-and-rest-api-interface">
+<h3>Web-based and REST API interface<a class="headerlink" href="#web-based-and-rest-api-interface" title="Permalink to this headline">¶</a></h3>
+<p>TBD</p>
+</div>
+<div class="section" id="command-line-client">
+<h3>Command line client<a class="headerlink" href="#command-line-client" title="Permalink to this headline">¶</a></h3>
+<p>TBD</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Getting Started</a><ul>
+<li><a class="reference internal" href="#local-mode">Local Mode</a></li>
+<li><a class="reference internal" href="#distributed-mode">Distributed Mode</a><ul>
+<li><a class="reference internal" href="#deployment-configuration">Deployment Configuration</a></li>
+<li><a class="reference internal" href="#deployment-using-fabric">Deployment using Fabric</a></li>
+<li><a class="reference internal" href="#deploying-the-workers">Deploying the Workers</a></li>
+<li><a class="reference internal" href="#web-based-and-rest-api-interface">Web-based and REST API interface</a></li>
+<li><a class="reference internal" href="#command-line-client">Command line client</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to Fedora Build Service&#8217;s documentation!</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="internals.html"
+                        title="next chapter">Internals</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/HOWTO.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="internals.html" title="Internals"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Fedora Build Service’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">On-Demand Fedora Build Service 1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Amit Saha.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
