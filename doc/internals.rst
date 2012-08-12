@@ -86,11 +86,14 @@ additionally has multiple queues - one for each supported Fedora
 release. That is, the ``i686`` broker can have a ``Fedora 17`` queue
 and a ``rawhide`` queue, corresponding to the two supported
 releases. Hence, workers capable of building ``i686`` images of the
-``Fedora17`` release will be listening to the ``Fedora 17`` queue on
-the ``i686`` broker for incoming jobs and so on.
+``Fedora17`` release will be listening to the ``Fedora-17`` queue on
+the ``i686`` broker for incoming jobs and so on. The application takes
+care of assigning the right queue to a job depending on the incoming
+build task. 
 
-The application takes care of assigning the right queue to a job
-depending on the incoming build task. 
+A single celery task is defined in the file ``tasks.py` (which takes
+care of passing the image build job to the workers. A copy of this
+exist in the ``webapp/`` as well as ``cli/`` directory.
 
 .. _celery: http://celeryproject.org/
 .. _RabbitMQ: http://rabbitmq.com
@@ -108,9 +111,25 @@ all run as daemons with the help of ``zdaemon``.
 Deployment
 ----------
 
+The deployment of the web application, the worker nodes and pretty
+much anything to do with the setup of the service is done by a
+fabric_ script, ``deploy.py``. The script logically defines the
+complete deployment into a number of *tasks*. It reads the
+specifications given in the ``conf/deploy.conf`` configuration file
+and carries out the specified tasks. See the `Getting Started`_
+document so see how it is used to deploy the various parts of the
+application.
+
+
+.. _fabric: http://docs.fabfile.org/en/1.4.3/index.html
+.. _`Getting Started`: HOWTO.html
+
 
 Source tour
 -----------
+
+TBD
+
 
 
 
