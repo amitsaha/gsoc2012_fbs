@@ -20,58 +20,79 @@
 #          http://fedoraproject.org/wiki/User:Amitksaha
 
 """ Simple client to access the Build Service via the Rest API
-at /rest. See HOWTO for setup and usage instructions.
+at /rest. See docs for setup and usage instructions.
 """
 
-# Uses requests library
-# http://docs.python-requests.org/en/latest/
-import requests 
 
 import ConfigParser
 import json
 import os
+import sys
 
-# Set these appropriately
-CONFIG_FILE = 'imagebuild_boot.conf'
-API_URL = 'http://127.0.0.1:5000/rest'
-
-def build_rest():
+try:
+    import requests 
+except ImportError, e:
+    print 'The client uses the Requests library (http://docs.python-requests.org/en/latest/index.html'
+    sys.exit(1)
     
-    buildconf = open(CONFIG_FILE)
-    buildconf_str = json.dumps(buildconf.read())
-    buildconf.close()
 
-    config = ConfigParser.RawConfigParser()
-    config.read(CONFIG_FILE)
-    if config.has_section('dvd'):
-        ks = config.get('dvd','config')
-    else:
-        if config.has_section('live'):
-            ks = config.get('live','config')
+
+class RestCli:
+
+    def __init__(self, config, endpoint):
+        self.config = config
+        self.endpoint = endpoint
+
+    def build_rest(self):
+        
+        with open(self.config) as buildconf:
+            buildconf_str = json.dumps(buildconf.read())
+
+        config = ConfigParser.RawConfigParser()
+        config.read(self.config)
+
+        if config.has_section('dvd'):
+            ks_fname = config.get('dvd','config')
         else:
-            ks = None
-            ks_fname = None
+            if config.has_section('live'):
+                ks_fname = config.get('live','config')
+            else:
+                ks_fname = None
+
+        if ks_fname:
+            # if its a remote KS file
+            if ks_fname.startswith(('http', 'https', 'ftp')):
+                # download and then JSON dump
+                import urllib2
+                try:
+                    ksstr = json.dumps(urllib2.urlopen(ks_fname).read())
+                except Exception as e:
+                    ksstr = None
+            else:
+                try:
+                    with open(os.path.abspath(ks_fname)) as ks:
+                        ksstr = json.dumps(ks.read())
+                except Exception as e:
+                    ksstr = None
+        else:
             ksstr = None
 
-    if ks:
-        if not ks.startswith(('http','ftp')):
-            with open(ks) as ks_fp:
-                ksstr = json.dumps(ks_fp.read())
-            head, ks_fname = os.path.split(ks)
-        else:
-            ks_fname = ks
-            ksstr = []
-
-    # build and send POST request (as JSON)
-    headers = {'Content-Type': 'application/json'}
-    payload={'config':buildconf_str, 'ksfname':ks_fname, 'ks':ksstr}
-    r = requests.post(API_URL, data = json.dumps(payload), headers = headers)
-    print r.json
+        # build and send POST request (as JSON)
+        headers = {'Content-Type': 'application/json'}
+        payload={'config':buildconf_str, 'ksfname':ks_fname, 'ks':ksstr}
+        r = requests.post(API_URL, data = json.dumps(payload), headers = headers)
+        print r.json
 
 if __name__=='__main__':
 
-    if not os.path.exists(CONFIG_FILE):
-        print 'You should have a configuration file at {0:s}. Exiting'.format(CONFIG_FILE)
+    # change this to suit your needs
+
+    API_URL = 'http://127.0.0.1:5000/rest'
+
+    if len(sys.argv) == 1:
+        print 'Must provide the path to the config file as the argument'
         sys.exit(1)
-    else:
-        build_rest()
+
+
+    cli = RestCli(sys.argv[1], API_URL)
+    cli.build_rest()

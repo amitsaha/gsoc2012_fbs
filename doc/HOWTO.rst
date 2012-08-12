@@ -439,11 +439,22 @@ Once you are there, you should see the following interface:
    :scale: 90 %
    :align: center
 
-The options on the Web UI are pretty much similar to what you
-specified in the configuration files earlier. You choose the type of
-image, the architecture, staging, release, etc. Once you hit submit,
+The options on the Web UI are similar to what you specified in the
+configuration files earlier. You choose the type of
+image, the architecture, staging, release, etc. Once you hit ``Submit``,
 you should get an email notification similar to the previous
 section. If you get an email saying *Try again..*, please do so.
 
+The web application also exposes a **REST API** endpoint
+``<master>:5000/rest`` which can be then accessed via a REST client to
+send build requests. An example client is ``cli/build_rest.py`` which
+is to be invoked similar to the other command line clients,
+i.e. ``python build_rest.py <config file>``. 
+
+Both the web interface and the REST API has the advantage that they
+allow submitting build requests from any other device having access to
+the network without any of dependencies required to be installed for
+the command line client in the previous section.
 
 .. _flower: https://github.com/mher/flower
+.. _internals: internals.html
