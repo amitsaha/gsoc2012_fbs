@@ -124,7 +124,6 @@ application.
 .. _fabric: http://docs.fabfile.org/en/1.4.3/index.html
 .. _`Getting Started`: HOWTO.html
 
-
 Source tour
 -----------
 

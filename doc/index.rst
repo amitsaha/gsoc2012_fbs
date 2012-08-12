@@ -21,14 +21,15 @@ can be minimized.
 
    HOWTO
    internals
+   image_builder
    roadmap
    contact
+
+
 
 
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 
