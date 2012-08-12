@@ -24,12 +24,3 @@ can be minimized.
    image_builder
    roadmap
    contact
-
-
-
-
-Indices and tables
-==================
-
-* :ref:`search`
-
