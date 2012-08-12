@@ -117,13 +117,6 @@ with open('webapp/nodes.conf','w') as f:
     f.write('[x86_64]\n')
     f.write('broker_url = {0:s}\n'.format(x86_64_broker))
 
-# Setup nodes.conf in cli/
-with open('cli/nodes.conf','w') as f:
-    f.write('[i686]\n')
-    f.write('broker_url = {0:s}\n'.format(i686_broker))
-    f.write('[x86_64]\n')
-    f.write('broker_url = {0:s}\n'.format(x86_64_broker))
-
 # Setup smtp.py in image_builder/
 with open('image_builder/smtp.py','w') as f:
     f.write('smtp_server={0:s}\n'.format(SMTP_SERVER))
@@ -225,7 +218,7 @@ def copy_files_webapp():
     zdaemon = '{0:s}/zdaemon_master.conf'.format(conf)
 
     # clean and create the work dirs
-    run('rm -rf {0:s}'.format(os.path.abspath(master_workdir)))
+    run('sudo rm -rf {0:s}'.format(os.path.abspath(master_workdir)))
     run('mkdir -p {0:s}'.format(os.path.abspath(master_workdir)))
 
     put(setuppy, os.path.abspath(master_workdir), use_sudo=False)
@@ -284,7 +277,7 @@ def deploy_webapp():
     with cd(master_workdir):
         run('sudo python setup.py install')
         run('sudo /usr/bin/zdaemon -d -C{0:s}/zdaemon_master.conf start'.format(master_workdir))
-    
+
 @task
 @hosts(workers)
 def deploy_workers():
@@ -333,7 +326,16 @@ def deploy_local():
 @task
 def setup_cli():
     """ Deployment for using the command line client in distributed mode """
-    deps = 'python-amqplib rabbitmq-server'
+
+    # Setup nodes.conf in cli/
+    with open('cli/nodes.conf','w') as f:
+        f.write('[i686]\n')
+        f.write('broker_url = {0:s}\n'.format(i686_broker))
+        f.write('[x86_64]\n')
+        f.write('broker_url = {0:s}\n'.format(x86_64_broker))
+
+
+    deps = 'python-amqplib'
     local('sudo yum --assumeyes install {0:s}'.format(deps)) 
     local('sudo python setup.py install')
 

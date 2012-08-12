@@ -11,7 +11,7 @@ for developers, testers and consumers of Fedora Linux. During the
 testing of Fedora releases, test images are often useful as smoke
 tests before full TC/RC composes, as baselines for specific test days
 or for automated installation testing in AutoQA. The idea is to make
-an on-demand Web-based build service which users/developers can use to
+an on-demand build service which users/developers can use to
 make custom Fedora based distributions so that command-line wrangling
 can be minimized.
 

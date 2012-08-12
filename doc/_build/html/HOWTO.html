@@ -362,13 +362,78 @@ architecture, something is wrong, and should be investigated.</p>
 <p>Now that the workers are deployed, let us now explore the options
 currently available for submitting an image build task.</p>
 </div>
-<div class="section" id="web-based-and-rest-api-interface">
-<h3>Web-based and REST API interface<a class="headerlink" href="#web-based-and-rest-api-interface" title="Permalink to this headline">¶</a></h3>
-<p>TBD</p>
+<div class="section" id="command-line">
+<h3>Command line<a class="headerlink" href="#command-line" title="Permalink to this headline">¶</a></h3>
+<p>A command line client, <tt class="docutils literal"><span class="pre">build_cli.py</span></tt> is available in the <tt class="docutils literal"><span class="pre">cli/</span></tt> directory of the
+source tree. Its usage is same as the command line client in local
+mode, <tt class="docutils literal"><span class="pre">build_cli_basic.py</span></tt>. However, before you can start using the
+command line client you you will need to setup your client computer
+using the fabric script we used earlier.</p>
+<p>From the source tree root, execute <tt class="docutils literal"><span class="pre">$</span> <span class="pre">fab</span> <span class="pre">setup_cli</span></tt>. You will
+notice that it installs a few dependencies and also writes a file,
+<tt class="docutils literal"><span class="pre">cli/nodes.conf</span></tt>. This file contains the information regarding the
+message brokers we discussed earlier. The client will use the message
+brokers to communicate with the workers. Once this has been completed,
+you can now submit a new build request:</p>
+<div class="highlight-python"><pre>python build_cli.py ../conf/boot_imagebuild.conf
+Sending build task to worker</pre>
 </div>
-<div class="section" id="command-line-client">
-<h3>Command line client<a class="headerlink" href="#command-line-client" title="Permalink to this headline">¶</a></h3>
-<p>TBD</p>
+<p>If all goes well, you should get an email at the email address you
+specified in the config file of the form:</p>
+<div class="highlight-python"><pre>Your Image Building Request have been submitted. You may monitor
+the progress by going  to http://10.0.0.27:5100/log/tmp/imagebuild_134473790944.log.
+You will also recieve an email upon completion.</pre>
+</div>
+<p>As you can see, the build job is being carried out by a worker node
+with the IP address: <tt class="docutils literal"><span class="pre">10.0.0.27</span></tt>. And you can monitor the progress
+by clicking that link. Once the job has completed, you should get an
+email saying that your job has been completed and the log messages. If
+you specified a FTP server to copy the images to, the image should be
+available there with a timestamp suffixed to the filename. If there
+was an error in your image build task, the email will tell you the
+same.</p>
+<p>Note:</p>
+<div class="highlight-python"><pre>As of now, there seems to be an yet unsquished bug which sometimes
+prevents you from seeing the log files. This has something to do
+with ``Celery's`` logging and the image builder's logging. In that
+case, the best bet is to just wait till you get a job completion
+email and check your staging area for the image(s)/logs.</pre>
+</div>
+<p>Its important that you specify a anonymous writable FTP server as your
+staging area here, since otherwise you will have to get the image/logs
+by logging into the worker node.</p>
+<p>It is to be noted that you can use this client from any computer which
+can access the worker nodes.</p>
+</div>
+<div class="section" id="web-and-rest-api-interface">
+<h3>Web and REST API interface<a class="headerlink" href="#web-and-rest-api-interface" title="Permalink to this headline">¶</a></h3>
+<p>You can also submit your image building jobs via the web
+application. Let&#8217;s see how you can set this up. Deploying the web
+application will involve three steps: copy the files to the web
+application host computer, install the packages and then finally start
+the web application. Once again, we use the fabric script to carry
+these steps:</p>
+<div class="highlight-python"><pre>$ fab copy_files_webapp install_packages_webapp deploy_webapp
+[gene@localhost] Executing task 'copy_files_webapp'
+[gene@localhost] run: sudo rm -rf /tmp/imagebuilder_webapp
+[gene@localhost] Login password for 'gene':
+[gene@localhost] out: [sudo] password for gene:
+
+[gene@localhost] run: mkdir -p /tmp/imagebuilder_webapp
+[gene@localhost] put: /home/gene/work/gsoc2012_fbs/setup.py -&gt; /tmp/imagebuilder_webapp/setup.py
+..</pre>
+</div>
+<p>Once these steps have been completed successfully without errors, you
+can now point your browser to <tt class="docutils literal"><span class="pre">&lt;master&gt;:5000/build</span></tt>, where
+<tt class="docutils literal"><span class="pre">&lt;master&gt;&gt;</span></tt> is the IP address of your web application host as
+specified in the <tt class="docutils literal"><span class="pre">deploy.conf</span></tt> file.</p>
+<p>Once you are there, you should see the following interface:</p>
+<a class="reference internal image-reference" href="_images/webui.png"><img alt="_images/webui.png" class="align-center" src="_images/webui.png" style="width: 913.5px; height: 480.6px;" /></a>
+<p>The options on the Web UI are pretty much similar to what you
+specified in the configuration files earlier. You choose the type of
+image, the architecture, staging, release, etc. Once you hit submit,
+you should get an email notification similar to the previous
+section. If you get an email saying <em>Try again..</em>, please do so.</p>
 </div>
 </div>
 </div>
@@ -387,8 +452,8 @@ currently available for submitting an image build task.</p>
 <li><a class="reference internal" href="#deployment-configuration">Deployment Configuration</a></li>
 <li><a class="reference internal" href="#deployment-using-fabric">Deployment using Fabric</a></li>
 <li><a class="reference internal" href="#deploying-the-workers">Deploying the Workers</a></li>
-<li><a class="reference internal" href="#web-based-and-rest-api-interface">Web-based and REST API interface</a></li>
-<li><a class="reference internal" href="#command-line-client">Command line client</a></li>
+<li><a class="reference internal" href="#command-line">Command line</a></li>
+<li><a class="reference internal" href="#web-and-rest-api-interface">Web and REST API interface</a></li>
 </ul>
 </li>
 </ul>

@@ -358,16 +358,92 @@ architecture, something is wrong, and should be investigated.
 Now that the workers are deployed, let us now explore the options
 currently available for submitting an image build task.
 
-Web-based and REST API interface
+Command line
+------------
+A command line client, ``build_cli.py`` is available in the ``cli/`` directory of the
+source tree. Its usage is same as the command line client in local
+mode, ``build_cli_basic.py``. However, before you can start using the
+command line client you you will need to setup your client computer
+using the fabric script we used earlier. 
+
+From the source tree root, execute ``$ fab setup_cli``. You will
+notice that it installs a few dependencies and also writes a file,
+``cli/nodes.conf``. This file contains the information regarding the
+message brokers we discussed earlier. The client will use the message
+brokers to communicate with the workers. Once this has been completed,
+you can now submit a new build request::
+     
+      python build_cli.py ../conf/boot_imagebuild.conf 
+      Sending build task to worker
+
+If all goes well, you should get an email at the email address you
+specified in the config file of the form::
+
+      Your Image Building Request have been submitted. You may monitor
+      the progress by going  to http://10.0.0.27:5100/log/tmp/imagebuild_134473790944.log.
+      You will also recieve an email upon completion.
+
+As you can see, the build job is being carried out by a worker node
+with the IP address: ``10.0.0.27``. And you can monitor the progress
+by clicking that link. Once the job has completed, you should get an
+email saying that your job has been completed and the log messages. If
+you specified a FTP server to copy the images to, the image should be
+available there with a timestamp suffixed to the filename. If there
+was an error in your image build task, the email will tell you the
+same.
+
+Note::
+
+     As of now, there seems to be an yet unsquished bug which sometimes
+     prevents you from seeing the log files. This has something to do
+     with ``Celery's`` logging and the image builder's logging. In that
+     case, the best bet is to just wait till you get a job completion
+     email and check your staging area for the image(s)/logs.
+
+Its important that you specify a anonymous writable FTP server as your
+staging area here, since otherwise you will have to get the image/logs
+by logging into the worker node. 
+
+It is to be noted that you can use this client from any computer which
+can access the worker nodes. 
+
+
+Web and REST API interface
 --------------------------------
 
-TBD
+You can also submit your image building jobs via the web
+application. Let's see how you can set this up. Deploying the web
+application will involve three steps: copy the files to the web
+application host computer, install the packages and then finally start
+the web application. Once again, we use the fabric script to carry
+these steps::
 
+     $ fab copy_files_webapp install_packages_webapp deploy_webapp
+     [gene@localhost] Executing task 'copy_files_webapp'
+     [gene@localhost] run: sudo rm -rf /tmp/imagebuilder_webapp
+     [gene@localhost] Login password for 'gene': 
+     [gene@localhost] out: [sudo] password for gene: 
 
-Command line client
--------------------
+     [gene@localhost] run: mkdir -p /tmp/imagebuilder_webapp
+     [gene@localhost] put: /home/gene/work/gsoc2012_fbs/setup.py -> /tmp/imagebuilder_webapp/setup.py
+     ..
 
-TBD
+Once these steps have been completed successfully without errors, you
+can now point your browser to ``<master>:5000/build``, where
+``<master>>`` is the IP address of your web application host as
+specified in the ``deploy.conf`` file.
+
+Once you are there, you should see the following interface:
+
+.. image:: images/webui.png
+   :scale: 90 %
+   :align: center
+
+The options on the Web UI are pretty much similar to what you
+specified in the configuration files earlier. You choose the type of
+image, the architecture, staging, release, etc. Once you hit submit,
+you should get an email notification similar to the previous
+section. If you get an email saying *Try again..*, please do so.
 
 
 .. _flower: https://github.com/mher/flower
