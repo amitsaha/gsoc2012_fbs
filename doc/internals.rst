@@ -91,7 +91,7 @@ the ``i686`` broker for incoming jobs and so on. The application takes
 care of assigning the right queue to a job depending on the incoming
 build task. 
 
-A single celery task is defined in the file ``tasks.py`` (which takes
+A single celery task is defined in the file ``tasks.py``, which takes
 care of passing the image build job to the workers. A copy of this
 exist in the ``webapp/`` as well as ``cli/`` directory.
 
