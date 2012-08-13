@@ -6,7 +6,7 @@
 Welcome to Fedora Build Service's documentation!
 ==========================================================
 
-On-Demand build service seeks to build Live and installation images
+**On-Demand Fedora Build service** seeks to build Live and installation images
 for developers, testers and consumers of Fedora Linux. During the
 testing of Fedora releases, test images are often useful as smoke
 tests before full TC/RC composes, as baselines for specific test days
