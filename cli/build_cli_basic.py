@@ -31,6 +31,11 @@ import json
 import glob
 import shutil
 
+# for local building mode
+# if you want email notifications, set this to
+# 0
+os.environ['LOCAL_MODE'] = '1'
+
 from image_builder.imagebuilder import ImageBuilder
 from image_builder.util import Utilities
 
@@ -74,11 +79,6 @@ if __name__ == '__main__':
         print 'Must provide the path to the config file as the argument'
         sys.exit(1)
 
-    # for local building mode
-    # if you want email notifications, set this to
-    # 0
-    os.environ['LOCAL_MODE'] = '1'
-    
     clibasic = CliBasic(sys.argv[1])
     status = clibasic.build()
 

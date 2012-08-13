@@ -26,8 +26,9 @@ import time
 import logging
 import os
 
-from celery.signals import worker_process_init
-from celery import signals
+if not os.environ.has_key('LOCAL_MODE'):
+    from celery.signals import worker_process_init
+    from celery import signals
 
 from image_builder.worker import Worker
 from image_builder.transfer import Transfer
