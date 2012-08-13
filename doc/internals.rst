@@ -127,9 +127,22 @@ application.
 Source tour
 -----------
 
-TBD
+The core of the build service is the package ``image_builder``, which
+lives in the ``image_builder/`` directory. The ``imagebuilder`` module
+is the entry point to the functionalities and invokes the classes and
+methods defined in the other modules, ``worker, notification, transfer`` and others. 
 
+The Web application lives in the ``app`` directory with the ``app``
+module as the entry point.
 
+The command line clients are in the ``cli/`` directory and the project
+documentation lives in the ``doc/`` directory. 
+
+The ``testing/`` directory is supposed to contain ``py.test`` unit tests for the
+service, but is currently lacking in them.
+
+The ``scripts/`` directory contains throwaway scripts not used by any
+of the other code.
 
 
 
