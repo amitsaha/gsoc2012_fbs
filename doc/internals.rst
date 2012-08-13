@@ -24,7 +24,7 @@ Logging and Build Monitoring
 
 The application uses the standard ``logging`` module to log the
 important events during the image building. A separate log file of the
-form ``/tmp/imagebuild_<timestamp>/log`` is created for each new build
+form ``/tmp/imagebuild_<timestamp>.log`` is created for each new build
 request. 
 
 In *local mode*, this file can be monitored for the progress and reason
