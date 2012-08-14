@@ -32,8 +32,6 @@ import glob
 import shutil
 
 # for local building mode
-# if you want email notifications, set this to
-# 0
 os.environ['LOCAL_MODE'] = '1'
 
 from image_builder.imagebuilder import ImageBuilder
