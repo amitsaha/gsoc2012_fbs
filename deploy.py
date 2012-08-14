@@ -283,12 +283,6 @@ def deploy_webapp():
 def deploy_workers():
     """ Deploy the workers """
 
-    # clean up /tmp/celery_hijack, if it exists
-    # used as a 'lock' file so that the celery
-    # logger is not unhijacked multiple times
-    # in a single celery session
-    if os.path.exists('/tmp/celery_hijack'):
-        run('rm /tmp/celery_hijack')
 
     with cd(worker_workdir):
         run('python setup.py install')
@@ -301,6 +295,7 @@ def deploy_workers():
         run('/usr/bin/zdaemon -d -C{0:s}/zdaemon_flower.conf start'.format(worker_workdir))
 
     run('service iptables stop')
+    run('setenforce 0')
     # copy the /usr/share/spin-kickstarts to /tmp
     # for Live and DVD image building.
     # Hence the supplied KS file need not be ksflattened

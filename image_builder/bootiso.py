@@ -27,6 +27,7 @@ import yum
 import shutil
 import sys
 import logging
+import subprocess
 
 class Bootiso():
     """ Create Boot ISO via lorax """
@@ -156,4 +157,28 @@ class Bootiso():
         lorax.configure()
         #fire
         self.logger.info('All set. Spawning boot iso creation using lorax.')
-        lorax.run(yb, self.product, self.version, self.release, None, None, False, tempdir, self.outputdir, self.arch, None, False)
+        #lorax.run(yb, self.product, self.version, self.release, None, None, False, tempdir, self.outputdir, self.arch, None, False)
+
+        # spawn lorax using subprocess.check_call
+        # lorax.run() seems to cause some unexplained 
+        # problems with celery
+        args=[]
+
+        args.extend(['-p',self.product])
+        args.extend(['-v',self.version])
+        args.extend(['-r',self.release])
+        
+        for repo in self.repos:
+            args.extend(['-s',repo])
+
+        args.extend([self.outputdir])
+
+        for mirror in self.mirrors:
+            args.extend(['-m',mirror])
+
+        args.extend(['--buildarch=',self.arch])
+        
+        process_call = ['lorax']
+        process_call.extend(args)
+
+        subprocess.check_call(process_call)

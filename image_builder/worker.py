@@ -186,7 +186,6 @@ class Worker():
 
         if os.path.exists(outdir):
             shutil.rmtree(outdir)
-            os.mkdir(outdir)
 
         # gather repos and mirrors
         repos, mirrors = self.gather_repos(release)
@@ -246,6 +245,9 @@ class Worker():
 
         destdir = self.buildconfig['dvd']['destdir']
         args.extend(['--destdir', destdir])
+        
+        if os.path.exists(destdir):
+            shutil.rmtree(destdir)
     
         cachedir = self.buildconfig['dvd']['cachedir']
         args.extend(['--cachedir',  cachedir])
