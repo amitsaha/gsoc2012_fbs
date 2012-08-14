@@ -26,10 +26,6 @@ import time
 import logging
 import os
 
-if not os.environ.has_key('LOCAL_MODE'):
-    from celery.signals import worker_process_init
-    from celery import signals
-
 from image_builder.worker import Worker
 from image_builder.transfer import Transfer
 from image_builder.notification import Notification
@@ -47,22 +43,26 @@ class ImageBuilder:
         self.staging = self.buildconfig['default']['staging']
         self.email = self.buildconfig['default']['email']
         self.logger = logging.getLogger('imagebuilder')
-        self.logfile = self.initlog()
 
-        # for celery
-        # do not let celery hijack the application's logger when
-        # not running in local mode, and
-        # hasn't already been done (for eg, for a single celery session
-        # we don't do it multiple times)
-        if not os.environ.has_key('LOCAL_MODE') and not os.path.exists('/tmp/celery_hijack'):
-            worker_process_init.connect(self.initlog())
-            open('/tmp/celery_hijack','w')
+        self.logger.info('Registered a new Image Build request from {0:s}'.format(self.email))
+        self.logger.info('Image type:: {0:s}'.format(self.iso_type))
+
+        # if running in distributed mode, the logger
+        # is initiated via tasks.py
+        # the environment variable is set by the command line
+        # client
+        if not os.environ.has_key('LOCAL_MODE'):
+            self.logfile = self.logger.handlers[0].getlogfile()
+        # if running in local mode
+        else:
+            self.logfile = self.initlog()
 
         self.monitor = self.checkmonitor()
         self.notify_email_init()
-        
-    def initlog(self):
 
+    def initlog(self):
+        """ Initiate the logging in local mode"""
+        
         time_now = str(time.time()).split('.')
         logfile = tempfile.gettempdir() + '/imagebuild_{0:s}.log'.format(time_now[0]+time_now[1])
         handler = logging.FileHandler(logfile)
@@ -70,7 +70,7 @@ class ImageBuilder:
         if not self.logger.handlers:
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
-            self.logger.propagate = False
+            self.logger.propagate = 0
             self.logger.setLevel(logging.DEBUG)
             self.logger.info('Registered a new Image Build request from {0:s}'.format(self.email))
             self.logger.info('Image type:: {0:s}'.format(self.iso_type))
@@ -78,6 +78,7 @@ class ImageBuilder:
         return logfile
 
     def getlogfile(self):
+        """ Return the log file """
 
         return self.logfile
 
