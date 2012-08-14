@@ -259,7 +259,7 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['pylorax', 'flask', 'koji', 'celery.signals','yum', 'image_builder.smtp','celery']
+MOCK_MODULES = ['pylorax', 'Flask', 'koji', 'celery.signals','yum', 'celery']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
