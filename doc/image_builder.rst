@@ -44,9 +44,6 @@ build service.
     :undoc-members:
     :show-inheritance:
 
-:mod:`smtp` Module
-------------------
-
 
 :mod:`transfer` Module
 ----------------------
