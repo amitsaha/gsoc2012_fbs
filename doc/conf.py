@@ -259,7 +259,7 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['pylorax', 'flask', 'pykickstart','pykickstart.parser','Flask', 'koji', 'celery.signals','yum', 'celery']
+MOCK_MODULES = ['pylorax', 'flask', 'pykickstart','pykickstart.parser','pykickstart.version','makeVersion','Flask', 'koji', 'celery.signals','yum', 'celery']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
