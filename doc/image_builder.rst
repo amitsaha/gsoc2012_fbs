@@ -47,10 +47,6 @@ build service.
 :mod:`smtp` Module
 ------------------
 
-.. automodule:: image_builder.smtp
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 :mod:`transfer` Module
 ----------------------
