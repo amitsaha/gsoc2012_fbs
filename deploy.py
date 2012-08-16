@@ -177,7 +177,6 @@ with open('conf/zdaemon_flower.conf','w') as f:
     f.write('socket-name {0:s}/celery_flower.sock\n'.format(worker_workdir))    
     f.write('</runner>\n')
 
-
 @task
 @hosts(master)
 def install_packages_webapp():
@@ -187,9 +186,13 @@ def install_packages_webapp():
     deps = 'python-flask python-flask-wtf python-wtforms python-amqplib rabbitmq-server python-zdaemon'
     run('sudo yum --assumeyes --enablerepo=updates install {0:s}'.format(deps)) 
 
+    # Flask-FAS integration
+    run('sudo pip-python install Flask-FAS')
+
     # install celery 3.0 (not available in repos)
     run('sudo yum --assumeyes --enablerepo=updates install gcc python-devel python-pip')
     run('sudo pip-python install celery')
+
     
 @task
 @hosts(workers)

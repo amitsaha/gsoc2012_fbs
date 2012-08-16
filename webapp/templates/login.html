@@ -1,0 +1,20 @@
+<!doctype html>
+<title>On-Demand Fedora Build Service</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<a href="https://github.com/amitsaha/gsoc2012_fbs/"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+
+
+<center>
+<h1>On-Demand Fedora Build Service Login</h1>
+<img src="../static/images/fedora.png"></img>
+</center>
+{% if g.fas_user %}
+    <p>Hello, {{ g.fas_user.username }} &mdash;
+    <a href="{{ url_for("logout") }}">Log out</a>
+{% else %}
+    <a href="{{ url_for("login") }}">Log in</a>
+{% endif %}
+&mdash; <a href="{{ url_for("index") }}">Main page</a></p>
+
+
+</html>
