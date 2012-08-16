@@ -429,11 +429,18 @@ these steps::
      ..
 
 Once these steps have been completed successfully without errors, you
-can now point your browser to ``<master>:5000/build``, where
+can now point your browser to ``<master>:5000/``, where
 ``<master>>`` is the IP address of your web application host as
 specified in the ``deploy.conf`` file.
 
 Once you are there, you should see the following interface:
+.. image:: images/home.png
+   :scale: 90 %
+   :align: center
+
+The first link allows you to submit a new image build job. Note that
+it requires you to have a *Fedora Account System*(FAS_) login. So, if
+you don't have one, please create one.
 
 .. image:: images/webui.png
    :scale: 90 %
@@ -445,11 +452,19 @@ image, the architecture, staging, release, etc. Once you hit ``Submit``,
 you should get an email notification similar to the previous
 section. If you get an email saying *Try again..*, please do so.
 
+The *Dashboard* page which is currently not implemented will have
+your details of your past and present build jobs submitted.
+
 The web application also exposes a **REST API** endpoint
 ``<master>:5000/rest`` which can be then accessed via a REST client to
 send build requests. An example client is ``cli/build_rest.py`` which
 is to be invoked similar to the other command line clients,
 i.e. ``python build_rest.py <config file>``. 
+
+Please note::
+     The REST API is currently insecure, i.e. there is not integration
+     with FAS. If you consider this a security risk, do not expose
+     this. Simply disable it in the web application, ``webapp/app.py``.
 
 Both the web interface and the REST API has the advantage that they
 allow submitting build requests from any other device having access to
@@ -458,3 +473,4 @@ the command line client in the previous section.
 
 .. _flower: https://github.com/mher/flower
 .. _internals: internals.html
+.. _FAS: https://admin.fedoraproject.org/accounts
