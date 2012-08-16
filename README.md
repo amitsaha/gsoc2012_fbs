@@ -23,8 +23,7 @@ Fedora Linux (17+)
 
 ## Good to have
 
-+ Configuration file generator
-+ User sessions - Integration with Fedora Account system
++ Unit tests coverage
 + Enhanced UI (dynamic forms/CSS/etc)
 + Implement error handling on the client UI (Available; but server side for now)
-+ Unit tests coverage
++ Configuration file generator
