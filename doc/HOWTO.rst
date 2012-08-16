@@ -446,7 +446,7 @@ you don't have one, please create one.
 **Login**
 
 .. image:: images/login.png
-   :scale: 90%
+   :scale: 80%
    :align: center
 
 
