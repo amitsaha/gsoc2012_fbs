@@ -434,6 +434,7 @@ can now point your browser to ``<master>:5000/``, where
 specified in the ``deploy.conf`` file.
 
 Once you are there, you should see the following interface:
+
 .. image:: images/home.png
    :scale: 90 %
    :align: center
