@@ -443,6 +443,15 @@ The first link allows you to submit a new image build job. Note that
 it requires you to have a **Fedora Account System** (FAS_) login. So, if
 you don't have one, please create one.
 
+**Login**
+
+.. image:: images/login.png
+   :scale: 90%
+   :align: center
+
+
+**Web-based Build Interface**
+
 .. image:: images/webui.png
    :scale: 90 %
    :align: center
