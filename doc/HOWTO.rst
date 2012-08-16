@@ -433,14 +433,14 @@ can now point your browser to ``<master>:5000/``, where
 ``<master>>`` is the IP address of your web application host as
 specified in the ``deploy.conf`` file.
 
-Once you are there, you should see the following interface:
+Once you are there, you should see the following interface.
 
 .. image:: images/home.png
-   :scale: 90 %
+   :scale: 95%
    :align: center
 
 The first link allows you to submit a new image build job. Note that
-it requires you to have a *Fedora Account System*(FAS_) login. So, if
+it requires you to have a **Fedora Account System** (FAS_) login. So, if
 you don't have one, please create one.
 
 .. image:: images/webui.png
