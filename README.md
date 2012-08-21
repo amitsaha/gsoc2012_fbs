@@ -20,7 +20,6 @@ Fedora Linux (17+)
 + Download a PDF of the latest documentation [here] (http://readthedocs.org/projects/on-demand-fedora-build-service/downloads/)
 
 
-
 ## Good to have
 
 + Unit tests coverage
